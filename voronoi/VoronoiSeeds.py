@@ -124,14 +124,15 @@ class VoronoiSeeds:
             self.RVE_length = grp['Microstructure_length'][:]
             self.num_crystals = self.seeds.shape[0]
 
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-from VoronoiTessellation import PeriodicVoronoiTessellation
 def test_sampling_methods(methods):
     num_crystals = 1024
     RVE_length = [1.0, 1.0, 1.0]
-    BitGeneratorSeed = 1000
+    BitGeneratorSeed = 42
     nbins = 128
+
+    import plotly.graph_objs as go
+    from plotly.subplots import make_subplots
+    from VoronoiTessellation import PeriodicVoronoiTessellation
 
     fig = make_subplots(rows=1, cols=1)
     for method in methods:
@@ -148,7 +149,7 @@ def test_sampling_methods(methods):
         fig.add_trace(hist)
 
     fig.update_layout(
-        title="Grain Volume Fraction Histogram",
+        title="Grain volume fraction histogram",
         xaxis_title="Grain volume fraction",
         yaxis_title="Frequency",
         legend=dict(x=1.05, y=1)

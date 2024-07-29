@@ -186,3 +186,4 @@ Thumbs.db
 *.h5
 !data/sphere.h5
 !data/fibers1.h5
+*.xdmf
