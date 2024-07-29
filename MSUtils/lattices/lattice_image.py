@@ -1,8 +1,8 @@
 import numpy as np
 from lattice_definitions import *
 import sys, os
-sys.path.append(os.path.join('general/'))
-from MicrostructureImage import MicrostructureImage
+# sys.path.append(os.path.join('general/'))
+from MSUtils.general.MicrostructureImage import MicrostructureImage
 
 def physical_to_voxel(point, dimensions, shape):
     return np.round(point / dimensions * (np.array(shape) - 1)).astype(int)
@@ -58,8 +58,8 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
             local_coords = np.tensordot(local_coords, rotation_matrix.T, axes=([3], [0]))
 
             mask = (abs(local_coords[..., 0] * voxel_sizes[0]) <= side_length / 2) & \
-                   (abs(local_coords[..., 1] * voxel_sizes[1]) <= side_length / 2) 
-                   
+                   (abs(local_coords[..., 1] * voxel_sizes[1]) <= side_length / 2)
+
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
 def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, strut_type='circle'):
@@ -76,7 +76,7 @@ def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, str
     Returns:
     - microstructure: ndarray - The generated microstructure image.
     """
-    
+
     vertices, edges = unit_cell_func()
     voxel_sizes = [L[i] / [Nx, Ny, Nz][i] for i in range(3)]
 
@@ -84,7 +84,7 @@ def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, str
     for edge in edges:
         start, end = vertices[edge[0]] * L, vertices[edge[1]] * L
         draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L)
-        
+
     return microstructure
 
 if __name__ == "__main__":
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     L = [1.0, 2.0, 3.0]  # microstructure length
     radius = 0.1  # radius of the struts
     strut_type = 'circle'
-    
+
     unit_cell_types = {
         'BCC': BCC_lattice,
         'BCCz': BCCz_lattice,
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     microstructures = {}
     for name, unit_cell_func in unit_cell_types.items():
         image = create_lattice_image(Nx, Ny, Nz, unit_cell_func, L, radius, strut_type)
-        
+
         tmp_metadata = metadata.copy()
         tmp_metadata['lattice type'] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)

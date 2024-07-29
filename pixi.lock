@@ -163,10 +163,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libxcrypt-4.4.36-hd590300_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libxkbcommon-1.7.0-h2c5496b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libxml2-2.12.7-h4c95cb1_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libxslt-1.1.39-h76b75d6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzip-1.10.1-h2629f0a_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.1-h4ab18f5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzopfli-1.0.3-h9c3ff4c_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/loguru-0.7.2-py312h7900ff3_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/lxml-5.2.2-py312hb90d8a5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lz4-c-1.9.4-hcb278e6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lzo-2.10-hd590300_1001.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-3.9.1-py312h7900ff3_0.conda
@@ -398,11 +400,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libwebp-base-1.4.0-h10d778d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libxcb-1.16-h0dc2134_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libxml2-2.12.7-heaf3512_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libxslt-1.1.39-h03b04e6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libzip-1.10.1-hc158999_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.3.1-h87427d6_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libzopfli-1.0.3-h046ec9c_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-18.1.8-h15ab845_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/loguru-0.7.2-py312hb401068_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/lxml-5.2.2-py312h1aa9a54_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/lz4-c-1.9.4-hf0c8a7f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/matplotlib-3.9.1-py312hb401068_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/matplotlib-base-3.9.1-py312h0d5aeb7_0.conda
@@ -594,11 +598,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libwebp-base-1.4.0-h93a5062_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxcb-1.16-hf2054a2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxml2-2.12.7-h01dff8b_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxslt-1.1.39-h223e5b9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzip-1.10.1-ha0bc3c6_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.1-hfb2fe0b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzopfli-1.0.3-h9f76cd9_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-18.1.8-hde57baf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/loguru-0.7.2-py312h81bd7bf_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/lxml-5.2.2-py312h0e5ab22_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/lz4-c-1.9.4-hb7217d7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-3.9.1-py312h1f38498_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.9.1-py312h32d6e5a_0.conda
@@ -754,10 +760,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/libwebp-base-1.4.0-hcfcfb64_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libxcb-1.16-hcd874cb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libxml2-2.12.7-h0f24e4e_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/libxslt-1.1.39-h3df6e99_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libzip-1.10.1-h1d365fa_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.1-h2466b09_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libzopfli-1.0.3-h0e60522_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/win-64/loguru-0.7.2-py312h2e8e312_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/lxml-5.2.2-py312h56c7e3b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/lz4-c-1.9.4-hcfcfb64_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/m2w64-gcc-libgfortran-5.3.0-6.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/win-64/m2w64-gcc-libs-5.3.0-7.tar.bz2
@@ -9069,6 +9077,70 @@ packages:
   size: 619901
   timestamp: 1721031175411
 - kind: conda
+  name: libxslt
+  version: 1.1.39
+  build: h03b04e6_0
+  subdir: osx-64
+  url: https://conda.anaconda.org/conda-forge/osx-64/libxslt-1.1.39-h03b04e6_0.conda
+  sha256: decfc5614a10231a17543b7366616fb2d88c14be6dd9dd5ecde63aa9a5acfb9e
+  md5: a6e0cec6b3517ffc6b5d36a920fc9312
+  depends:
+  - libxml2 >=2.12.1,<3.0.0a0
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 231368
+  timestamp: 1701628933115
+- kind: conda
+  name: libxslt
+  version: 1.1.39
+  build: h223e5b9_0
+  subdir: osx-arm64
+  url: https://conda.anaconda.org/conda-forge/osx-arm64/libxslt-1.1.39-h223e5b9_0.conda
+  sha256: 2f1d99ef3fb960f23a63f06cf65ee621a5594a8b4616f35d9805be44617a92af
+  md5: 560c9cacc33e927f55b998eaa0cb1732
+  depends:
+  - libxml2 >=2.12.1,<3.0.0a0
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 225705
+  timestamp: 1701628966565
+- kind: conda
+  name: libxslt
+  version: 1.1.39
+  build: h3df6e99_0
+  subdir: win-64
+  url: https://conda.anaconda.org/conda-forge/win-64/libxslt-1.1.39-h3df6e99_0.conda
+  sha256: 6e3d99466d2076c35e7ac8dcdfe604da3d593f55b74a5b8e96c2b2ff63c247aa
+  md5: 279ee338c9b34871d578cb3c7aa68f70
+  depends:
+  - libxml2 >=2.12.1,<3.0.0a0
+  - ucrt >=10.0.20348.0
+  - vc >=14.2,<15
+  - vc14_runtime >=14.29.30139
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 418542
+  timestamp: 1701629338549
+- kind: conda
+  name: libxslt
+  version: 1.1.39
+  build: h76b75d6_0
+  subdir: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/libxslt-1.1.39-h76b75d6_0.conda
+  sha256: 684e9b67ef7b9ca0ca993762eeb39705ec58e2e7f958555c758da7ef416db9f3
+  md5: e71f31f8cfb0a91439f2086fc8aa0461
+  depends:
+  - libgcc-ng >=12
+  - libxml2 >=2.12.1,<3.0.0a0
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 254297
+  timestamp: 1701628814990
+- kind: conda
   name: libzip
   version: 1.10.1
   build: h1d365fa_3
@@ -9389,6 +9461,89 @@ packages:
   - pkg:pypi/loguru?source=conda-forge-mapping
   size: 123244
   timestamp: 1695547657622
+- kind: conda
+  name: lxml
+  version: 5.2.2
+  build: py312h0e5ab22_0
+  subdir: osx-arm64
+  url: https://conda.anaconda.org/conda-forge/osx-arm64/lxml-5.2.2-py312h0e5ab22_0.conda
+  sha256: 6dda17b6be96e13adb7810e7aeaa676429b93ce472e636f73ba56f2b61918d24
+  md5: d049fc23bf40c0f7d97bc4a35d91b97c
+  depends:
+  - __osx >=11.0
+  - libxml2 >=2.12.6,<3.0a0
+  - libxslt >=1.1.39,<2.0a0
+  - libzlib >=1.2.13,<2.0.0a0
+  - python >=3.12,<3.13.0a0
+  - python >=3.12,<3.13.0a0 *_cpython
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause and MIT-CMU
+  purls:
+  - pkg:pypi/lxml?source=conda-forge-mapping
+  size: 1149120
+  timestamp: 1715599148831
+- kind: conda
+  name: lxml
+  version: 5.2.2
+  build: py312h1aa9a54_0
+  subdir: osx-64
+  url: https://conda.anaconda.org/conda-forge/osx-64/lxml-5.2.2-py312h1aa9a54_0.conda
+  sha256: 9c8cc1e45243e6cd5756312a4596e2b6776a765b49d63abe7cf09ddd86145056
+  md5: 17318078a298a3f6e4d84ce3bb2ef612
+  depends:
+  - __osx >=10.13
+  - libxml2 >=2.12.6,<3.0a0
+  - libxslt >=1.1.39,<2.0a0
+  - libzlib >=1.2.13,<2.0.0a0
+  - python >=3.12,<3.13.0a0
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause and MIT-CMU
+  purls:
+  - pkg:pypi/lxml?source=conda-forge-mapping
+  size: 1195010
+  timestamp: 1715599257126
+- kind: conda
+  name: lxml
+  version: 5.2.2
+  build: py312h56c7e3b_0
+  subdir: win-64
+  url: https://conda.anaconda.org/conda-forge/win-64/lxml-5.2.2-py312h56c7e3b_0.conda
+  sha256: b1f6dd7fe2c34c1e9fa5427deba46499d0015136dd68e2e333c91038a4e68da3
+  md5: 3a7f3db85a43bbc513b2df176b5fbb05
+  depends:
+  - libxml2 >=2.12.6,<3.0a0
+  - libxslt >=1.1.39,<2.0a0
+  - libzlib >=1.2.13,<2.0.0a0
+  - python >=3.12,<3.13.0a0
+  - python_abi 3.12.* *_cp312
+  - ucrt >=10.0.20348.0
+  - vc >=14.2,<15
+  - vc14_runtime >=14.29.30139
+  license: BSD-3-Clause and MIT-CMU
+  purls:
+  - pkg:pypi/lxml?source=conda-forge-mapping
+  size: 1049272
+  timestamp: 1715599079499
+- kind: conda
+  name: lxml
+  version: 5.2.2
+  build: py312hb90d8a5_0
+  subdir: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/lxml-5.2.2-py312hb90d8a5_0.conda
+  sha256: fab93c7618006b5595add86b0cb12501642dcb3a295de54eef17e0dd1aaf22ae
+  md5: da3e0a20f8eb75072ad036198c37be61
+  depends:
+  - libgcc-ng >=12
+  - libxml2 >=2.12.6,<3.0a0
+  - libxslt >=1.1.39,<2.0a0
+  - libzlib >=1.2.13,<2.0.0a0
+  - python >=3.12,<3.13.0a0
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause and MIT-CMU
+  purls:
+  - pkg:pypi/lxml?source=conda-forge-mapping
+  size: 1399383
+  timestamp: 1715598656220
 - kind: conda
   name: lz4-c
   version: 1.9.4
@@ -9909,8 +10064,8 @@ packages:
   name: msutils
   version: 0.1.0
   path: .
-  sha256: 0d3f53b42fc7425e5864abb253118bef03154b825167ad5153ad1e5eb2ccbaf4
-  requires_python: '>=3.11'
+  sha256: aa7ae34109302e601614bf26f30c461dd164c3ac8fc7e06b3133df54187199ac
+  requires_python: '>=3.12'
   editable: true
 - kind: conda
   name: msys2-conda-epoch

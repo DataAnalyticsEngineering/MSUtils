@@ -1,9 +1,9 @@
 import sys, os, h5py, numpy as np
 from ComBoNormal import *
-sys.path.append(os.path.join('general/'))
-from resize_image import resize_image
-from MicrostructureImage import MicrostructureImage
-from ComBoMicrostructureImage import ComBoMicrostructureImage
+# sys.path.append(os.path.join('general/'))
+from MSUtils.general.resize_image import resize_image
+from MSUtils.general.MicrostructureImage import MicrostructureImage
+from MSUtils.general.ComBoMicrostructureImage import ComBoMicrostructureImage
 
 
 if __name__ == '__main__':
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     combo_micro_img = ComBoMicrostructureImage()
     combo_micro_img.downscale(ms.image, 64, 64, 64, pad_window=[2,2,2])
     combo_micro_img.write('data/test.h5', '/combo_grp')
-    print(combo_micro_img.volume_fractions)    
+    print(combo_micro_img.volume_fractions)
 
     combo_micro_img.read('data/test.h5', '/combo_grp')
 

@@ -3,12 +3,15 @@ name = "MSUtils"
 version = "0.1.0"
 description = "Add a short description here"
 authors = [{name = "Claudius Haag", email = "claudius.haag@mib.uni-stuttgart.de"}]
-requires-python = ">= 3.11"
+requires-python = ">= 3.12"
 dependencies = []
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["MSUtils"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -27,3 +30,4 @@ matplotlib = ">=3.9.1,<4"
 scikit-image = ">=0.24.0,<0.25"
 vtk = ">=9.3.1,<10"
 plotly = ">=5.23.0,<6"
+lxml = ">=5.2.2,<6"
