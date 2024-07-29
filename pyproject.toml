@@ -2,7 +2,7 @@
 name = "MSUtils"
 version = "0.1.0"
 description = "Add a short description here"
-authors = [{name = "Claudius Haag", email = "claudius.haag@mib.uni-stuttgart.de"}]
+authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 requires-python = ">= 3.12"
 dependencies = []
 
@@ -21,6 +21,7 @@ platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 MSUtils = { path = ".", editable = true }
 
 [tool.pixi.tasks]
+voronoi = "python MSUtils/voronoi/main.py"
 
 [tool.pixi.dependencies]
 numpy = ">=2.0.1,<3"
