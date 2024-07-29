@@ -187,3 +187,6 @@ Thumbs.db
 !data/sphere.h5
 !data/fibers1.h5
 *.xdmf
+# pixi environments
+.pixi
+*.egg-info
