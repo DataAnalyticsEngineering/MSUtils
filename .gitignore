@@ -180,3 +180,9 @@ venv.bak/
 # System files and folders
 Desktop.ini
 Thumbs.db
+
+# Special to project
+*.log
+*.h5
+!data/sphere.h5
+!data/fibers1.h5
