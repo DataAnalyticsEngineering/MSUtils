@@ -1,16 +1,17 @@
-from VoronoiTessellation import PeriodicVoronoiTessellation
-from VoronoiImage import PeriodicVoronoiImage
+from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
+from MSUtils.voronoi.VoronoiImage import PeriodicVoronoiImage
+from MSUtils.voronoi.VoronoiSeeds import VoronoiSeeds
+
 # from GBErosion import *
-from VoronoiSeeds import VoronoiSeeds
-from voronoi_helpers import *
+# from voronoi_helpers import *
 
 if __name__ == "__main__":
     
-    num_crystals = 64
+    num_crystals = 1024
     RVE_length = [1, 1, 1]
 
-    SeedInfo = VoronoiSeeds(num_crystals, RVE_length, "random", BitGeneratorSeed=0)
-    # SeedInfo.write("/seeds", "data/voroImg.h5")
+    SeedInfo = VoronoiSeeds(num_crystals, RVE_length, "sobol", BitGeneratorSeed=42)
+    SeedInfo.write("/seeds", "data/voroImg.h5")
 
     # SeedInfo.seeds = np.array([[0.25, 0.25, 0.25], [0.25, 0.25, 0.75], [0.25, 0.75, 0.25], [0.25, 0.75, 0.75], [0.75, 0.25, 0.25], [0.75, 0.25, 0.75], [0.75, 0.75, 0.25], [0.75, 0.75, 0.75]]) #+ np.random.normal(loc=0.0, scale=0.05, size=(8, 3))
     # SeedInfo.seeds = np.array([[0.5, 0.5, 0.25], [0.5, 0.5, 0.75]])
@@ -29,49 +30,9 @@ if __name__ == "__main__":
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     # voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, shrink_factor=2)
     # voroErodedImg.write_to_h5("/dset_0", h5filename, order="zyx")
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

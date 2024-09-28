@@ -1,7 +1,7 @@
 import numpy as np
 from voronoi_helpers import calculate_polygon_area_3d
-
 from scipy.spatial import Voronoi, ConvexHull, Delaunay
+
 class PeriodicVoronoiTessellation:
     def __init__(self, RVE_size, seeds):
         self.RVE_size = RVE_size

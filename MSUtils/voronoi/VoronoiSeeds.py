@@ -152,13 +152,44 @@ def test_sampling_methods(methods):
         title="Grain volume fraction histogram",
         xaxis_title="Grain volume fraction",
         yaxis_title="Frequency",
-        legend=dict(x=1.05, y=1)
+        legend=dict(x=1.05, y=1),
+        autosize=False,
+        width=1400,
+        height=900,
+        font=dict(size=20),
+        template='simple_white',
+    )
+    fig.update_xaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor='lightgrey',  # Set the grid color to make it visible
+        layer='above traces',  # Bring grid lines to the front
+        mirror=True,
+        ticks="inside",
+        tickwidth=2,
+        ticklen=6,
+        title_font=dict(size=20),
+        tickfont=dict(size=20),
+        automargin=True,
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridwidth=1,
+        gridcolor='lightgrey',  # Set the grid color to make it visible
+        layer='above traces',  # Bring grid lines to the front
+        mirror=True,
+        ticks="inside",
+        tickwidth=2,
+        ticklen=6,
+        title_font=dict(size=20),
+        tickfont=dict(size=20),
+        automargin=True,
     )
     fig.show()
 
 if __name__ == "__main__":
     # Example parameters
-    num_crystals = 32
+    num_crystals = 1024
     RVE_length = [1.0, 1.0, 1.0]
     method = "random"
     BitGeneratorSeed = 42
@@ -171,6 +202,6 @@ if __name__ == "__main__":
     # Write the seeds to an HDF5 file
     seeds.write(grp_name=grp_name, filename=filename)
 
-    # Test sampling methods
-    methods = ["random", "sobol"]
+    # Test sampling metho""ds
+    methods = ["random", "lhs-lloyd", "halton", "sobol"]
     test_sampling_methods(methods)

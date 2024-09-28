@@ -61,9 +61,9 @@ def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, str
 
 if __name__ == "__main__":
 
-    Nx, Ny, Nz = 123, 345, 321  # microstructure resolution
-    L = [1.0, 2.0, 3.0]  # microstructure length
-    radius = 0.1  # radius of the struts
+    Nx, Ny, Nz = 256, 256, 256  # microstructure resolution
+    L = [1.0, 1.0, 1.0]  # microstructure length
+    radius = 0.05  # radius of the struts
     strut_type = 'circle'
 
     unit_cell_types = {

@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.spatial import cKDTree as KDTree
-import sys, os, numpy as np
-# sys.path.append(os.path.join('general/'))
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 
 class PeriodicVoronoiImage(MicrostructureImage):
