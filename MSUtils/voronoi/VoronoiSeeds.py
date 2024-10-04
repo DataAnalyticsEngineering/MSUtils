@@ -1,6 +1,7 @@
 import numpy as np
 import h5py
 from scipy.stats import qmc 
+from MSUtils.voronoi.voronoi_helpers import factorize
 
 class VoronoiSeeds:
     def __init__(self, num_crystals=None, RVE_length=[1, 1, 1], method="sobol", BitGeneratorSeed=None, filename=None, grp_name=None):
@@ -10,13 +11,13 @@ class VoronoiSeeds:
         Parameters:
         - num_crystals: Number of seed points (or crystals) to generate.
         - RVE_length: Dimensions of the representative volume element (RVE).
-        - method: Method to generate seed points. Can be one of the following: "random", "lhs-llyod", "halton", "sobol".
+        - method: Method to generate seed points. 
+            - Can be one of the following: "random", "lhs-llyod", "halton", "sobol", "honeycomb", "rubiks-cube".
         - BitGeneratorSeed: Optional. Seed for the random number generator.
         - filename: Optional. HDF5 file to read data from.
         - grp_name: Optional. Group name in the HDF5 file to read data from.
        
         """
-
         if filename and grp_name:
             self.read(filename, grp_name)
         else:
@@ -65,10 +66,15 @@ class VoronoiSeeds:
         elif self.method == "sobol":
             sampler = qmc.Sobol(d=dim, seed=self.BitGeneratorSeed)
             self.seeds = sampler.random_base2(m=int(np.ceil(np.log2(self.num_crystals))))[:self.num_crystals] * np.array(self.RVE_length)
+        elif self.method == "honeycomb":
+            N = factorize(self.num_crystals, dim)
+            self.seeds = self._generate_lattice(N[0], N[1], N[2], self.RVE_length, stagger=True)
+        elif self.method == "rubiks-cube":
+            N = factorize(self.num_crystals, dim)
+            self.seeds = self._generate_lattice(N[0], N[1], N[2], self.RVE_length, stagger=False)
         else:
-            raise ValueError("Unknown sampling method!") 
-            # TODO: Add more sampling methods here using PeriodicVoronoiTessellation class 
-
+            raise ValueError("Unknown sampling method! : " + self.method) 
+            # Add more sampling methods here if needed
 
         # Generate random orientations using the Euler angles (z-x-z convention)
         X, Y, Z = np.random.rand(3, self.num_crystals)
@@ -93,11 +99,47 @@ class VoronoiSeeds:
 
         rot_matrices = np.stack((R11, R12, R13, R21, R22, R23, R31, R32, R33), axis=-1).reshape(self.num_crystals, 3, 3)
 
-        # The initial orientation is simply an identity matrix, representing [1, 0, 0], [0, 1, 0], and [0, 0, 1]
         # Using the rotation matrices, we compute the lattice vectors for each seed
         initial_orientation = np.eye(3)
         self.lattice_vectors = np.einsum('nij,jk->nik', rot_matrices, initial_orientation)
 
+    def _generate_lattice(self, Nx, Ny, Nz, RVE_length, stagger=True):
+        """
+        Generate points in a 3D lattice with optional staggering, ensuring symmetry across the xy, xz, and yz planes.
+
+        Parameters:
+        - Nx: Number of points along the x-axis.
+        - Ny: Number of points along the y-axis.
+        - Nz: Number of points along the z-axis.
+        - RVE_length: Lengths of the box in each dimension (x, y, z).
+        - stagger: Boolean indicating whether to apply staggering.
+
+        Returns:
+        - np.ndarray: Seed points in lattice arrangement.
+        """
+        points = []
+        a = RVE_length[0] / Nx  
+        b = RVE_length[1] / Ny  
+        c = RVE_length[2] / Nz 
+
+        for i in range(Nx):
+            for j in range(Ny):
+                for k in range(Nz):
+                    # Generate base lattice points
+                    x = i * a
+                    y = j * b
+                    z = k * c
+                    if stagger:
+                        # Apply staggering in x, y, and z directions
+                        if j % 2 == 1:
+                            x += a / 2  # Stagger every other row in x direction
+                        if k % 2 == 1:
+                            y += b / 2  # Stagger every other layer in y direction
+                            x += a / 2  # Further stagger in x direction
+                    # Add the point, ensuring it's within the RVE box
+                    points.append([x % RVE_length[0], y % RVE_length[1], z % RVE_length[2]])
+        return np.array(points)
+    
     def write(self, grp_name, filename):
         with h5py.File(filename, 'a') as h5_file:
             # Check if the group already exists and delete it
@@ -125,7 +167,7 @@ class VoronoiSeeds:
             self.num_crystals = self.seeds.shape[0]
 
 def test_sampling_methods(methods):
-    num_crystals = 1024
+    num_crystals = 1000
     RVE_length = [1.0, 1.0, 1.0]
     BitGeneratorSeed = 42
     nbins = 128
@@ -203,5 +245,5 @@ if __name__ == "__main__":
     seeds.write(grp_name=grp_name, filename=filename)
 
     # Test sampling metho""ds
-    methods = ["random", "lhs-lloyd", "halton", "sobol"]
+    methods = ["random", "lhs-lloyd", "halton", "sobol", "honeycomb", "rubiks-cube"]
     test_sampling_methods(methods)

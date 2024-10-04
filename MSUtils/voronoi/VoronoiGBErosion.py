@@ -1,17 +1,16 @@
 import numpy as np
-from voronoi_helpers import periodic_difference, periodic_dist_matrix, periodic_erosion
+from voronoi_helpers import periodic_erosion
 import h5py
 from scipy.spatial import Delaunay
-import logging
 
 class PeriodicVoronoiImageErosion:
     def __init__(self, voroImg, voroTess, shrink_factor=5):
         self.image = voroImg.image
         self.seeds = voroTess.seeds
         self.shrink_factor = shrink_factor
-        self.RVE_length = np.array(voroImg.RVE_length)
+        self.RVE_length = np.array(voroImg.L)
         self.eroded_image = None
-        self.N = np.array(voroImg.N)
+        self.N = np.array(voroImg.resolution)
         self.voroTess = voroTess
 
         # Initialize lists to store grain boundary information
@@ -116,10 +115,21 @@ class PeriodicVoronoiImageErosion:
                 #permuted_normals_field = permuted_normals_field[..., [2, 1, 0]]  # Reverse the vector components
 
             # Save eroded image to .h5 file
+            if 'eroded_image' in grp:
+                del grp['eroded_image']
+                print("Overwriting existing 'eroded_image' dataset.")
             grp.create_dataset('eroded_image', data=permuted_eroded_image, dtype=np.int32, compression="gzip", compression_opts=compression_opts)
+
             # Save GBVoxelInfo to .h5 file
+            if 'GBVoxelInfo' in grp:
+                del grp['GBVoxelInfo']
+                print("Overwriting existing 'GBVoxelInfo' dataset.")
             grp.create_dataset('GBVoxelInfo', data=permuted_voxel_info_array, compression="gzip", compression_opts=compression_opts)
+
             # Save normals to .h5 file
+            if 'normals' in grp:
+                del grp['normals']
+                print("Overwriting existing 'normals' dataset.")
             grp.create_dataset('normals', data=permuted_normals_field, dtype='f8', compression="gzip", compression_opts=compression_opts)
 
 

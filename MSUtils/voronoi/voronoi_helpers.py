@@ -1,5 +1,5 @@
 import numpy as np
-import h5py
+from sympy.ntheory import factorint
 
 def periodic_difference(pt1, pt2, RVE_length):
     """Compute the periodic difference vector and its norm between two points."""
@@ -36,121 +36,6 @@ def periodic_erosion(mask, shrink_factor):
     return eroded_padded_mask[shrink_factor//2:Nx+shrink_factor//2, 
                               shrink_factor//2:Ny+shrink_factor//2, 
                               shrink_factor//2:Nz+shrink_factor//2]
-
-def save_sample_to_hdf5(dsetname_prefix, tessellation, filename, seeds=None, lattice_vectors=None, neighbors=None, GBVoxelInfo_list=[]):
-    """
-    Save a single 3D Voronoi tessellation sample to an HDF5 file.
-    
-    Parameters:
-    - dsetname_prefix: Prefix of the dataset names. The datasets will be named with 
-      the prefix followed by '/image', '/neighbors', '/seed_positions',  '/lattice_vectors', and '/GBVoxelInfo'.
-    - tessellation: The 3D Voronoi tessellation to save.
-    - filename: Name of the HDF5 file to which the data should be saved.
-    - seeds: Optional. The seed points corresponding to the tessellation.
-    - lattice_vectors: Optional. The lattice vectors for each crystal in the tessellation.
-    - neighbors: Optional. Dictionary containing neighbor relationships for each crystal.
-    - GBVoxelInfo_list: Optional. List of GBVoxelInfo objects detailing grain boundary information.
-    """
-    
-    with h5py.File(filename, 'a') as f:
-        # Create a group with the dsetname_prefix
-        grp = f.create_group(dsetname_prefix)
-        compression_opts = 9
-        
-        # Always save tessellation
-        grp.create_dataset('image', data=tessellation, dtype=np.int32, compression="gzip", compression_opts=compression_opts)
-        
-        # Save seeds if provided
-        if seeds is not None:
-            grp.create_dataset('seed_positions', data=seeds, dtype=np.int32, compression="gzip", compression_opts=compression_opts)
-
-        # Save lattice vectors if provided
-        if lattice_vectors is not None:
-            grp.create_dataset('lattice_vectors', data=lattice_vectors, dtype=np.float64, compression="gzip", compression_opts=compression_opts)    
-        
-        # Save neighbors if provided
-        if neighbors is not None:
-            # Determine n_max_neighbors from the neighbors dictionary
-            n_max_neighbors = max(len(neigh_list) for neigh_list in neighbors.values())
-            
-            # Create a padded 2D array for neighbor data
-            neighbor_array = -1 * np.ones((len(seeds), n_max_neighbors), dtype=np.int32)  # -1 as the padding value
-            for idx, neigh_list in neighbors.items():
-                neighbor_array[idx, :len(neigh_list)] = neigh_list
-            
-            grp.create_dataset('neighbors', data=neighbor_array, dtype=np.int32, compression="gzip", compression_opts=compression_opts)
-        
-        # If GBVoxelInfo_list is provided and not empty
-        if GBVoxelInfo_list:
-            # Define dtype for the structured numpy array
-            voxel_info_dtype = np.dtype([
-                ('coords', 'i8', (3,)),
-                ('elem_xyz', 'i8'),
-                ('materials', 'i8', (2,)),
-                ('normal', 'f8', (3,))
-            ])
-
-            # Convert GBVoxelInfo list to structured numpy array
-            voxel_info_array = np.array([(voxel.coords, voxel.elem_xyz, voxel.materials, voxel.normal) 
-                                         for voxel in GBVoxelInfo_list], dtype=voxel_info_dtype)
-            
-            # Save structured numpy array to .h5 file
-            grp.create_dataset('GBVoxelInfo', data=voxel_info_array, dtype=voxel_info_dtype, compression="gzip", compression_opts=compression_opts)
-
-            # Create a new field for normal
-            Nx, Ny, Nz = tessellation.shape
-            normals_field = np.zeros((Nx, Ny, Nz, 3))
-
-            for voxel in GBVoxelInfo_list:
-                x, y, z = voxel.coords
-                normals_field[x, y, z] = voxel.normal
-
-            grp.create_dataset('normal', data=normals_field, dtype='f8', compression="gzip", compression_opts=compression_opts)
-
-def load_data_from_h5(filename, dsetname_prefix):
-    """
-    Load data (image, neighbors, seeds) from an HDF5 file based on a dataset name prefix.
-    
-    Parameters:
-    - filename: Path to the HDF5 file.
-    - dsetname_prefix: Prefix of the dataset names. Assumes the datasets are named with 
-      the prefix followed by '/image', '/neighbors', and '/seed_positions'.
-    
-    """
-
-    with h5py.File(filename, 'r') as f:
-        # Try to load the image dataset
-        try:
-            image = f[dsetname_prefix + '/image'][:]
-        except KeyError:
-            try:
-                image = f[dsetname_prefix + '/ms'][:]
-            except KeyError:
-                print("Error: Neither /image nor /ms datasets found.")
-                image = None
-        
-        # Try to load neighbors
-        try:
-            neighbors_padded = f[dsetname_prefix + '/neighbors'][:]
-            # Assuming padding value is -1 for neighbors, remove it
-            padding_value = -1
-            neighbors_list = [list(filter(lambda x: x != padding_value, row)) for row in neighbors_padded]
-            # Convert the list of neighbors into a dictionary
-            neighbors = {i: neigh for i, neigh in enumerate(neighbors_list)}
-        except KeyError:
-            print("Warning: Neighbors dataset not found.")
-            neighbors = None
-        
-        # Try to load seeds
-        try:
-            seeds = f[dsetname_prefix + '/seed_positions'][:]
-        except KeyError:
-            print("Warning: seed_positions dataset not found.")
-            seeds = None
-
-    return image, seeds, neighbors
-
-
 
 def calculate_polygon_area_3d(vertices, normal):
     """
@@ -189,112 +74,32 @@ def calculate_polygon_area_3d(vertices, normal):
     x, y = vertices_2d[:, 0], vertices_2d[:, 1]
     return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import matplotlib.pyplot as plt
-# def visualize_voronoi_3d(cube, seeds=None):
-#     """
-#     Visualize a 3D Voronoi tessellation using matplotlib's voxels.
+def factorize(n, dim):
+    """
+    Use sympy's factorint to factorize `n` into prime factors and then group them into `dim` factors
+    that are as close as possible.
+
+    :param n: The number to factorize.
+    :param dim: The number of factors to group into (e.g., 3 for 3D).
+    :return: A list of `dim` factors whose product equals `n`.
+    """
+    if dim < 1:
+        raise ValueError("dim must be at least 1.")
     
-#     Parameters:
-#     - cube: 3D array containing the Voronoi tessellation.
-#     - seeds: Optional. Original seed points to be plotted over the tessellation.
-#     """
+    # Get prime factorization of n
+    prime_factors = factorint(n)
     
-#     fig = plt.figure(figsize=(10, 10))
-#     ax = fig.add_subplot(111, projection='3d')
-
-#     # Define colors for each Voronoi region
-#     unique_vals = np.unique(cube)
-#     colors = plt.cm.jet(np.linspace(0, 1, len(unique_vals)))
-#     color_map = dict(zip(unique_vals, colors))
-#     colored_cube = np.array([color_map[val] for val in cube.ravel()])
-#     colored_cube = colored_cube.reshape(*cube.shape, 4)
-
-#     mask = cube >= 0  # Use this mask to fill voxels
-#     ax.voxels(mask, facecolors=colored_cube, edgecolor='k', linewidth=0.7)
-#     ax.set_box_aspect([1, 1, 1])
-
-#     if seeds is not None:
-#         ax.scatter(seeds[:, 0], seeds[:, 1], seeds[:, 2], c='red', marker='x', s=100)
+    # Start with `dim` equal factors
+    factors = [1] * dim
     
-#     plt.title("3D Voronoi Tessellation")
-#     plt.show()
+    # Sort the factors in descending order to distribute larger primes first
+    primes = sorted((prime for prime, exp in prime_factors.items() for _ in range(exp)), reverse=True)
+    
+    # Distribute the primes among the factors to minimize the difference between factors
+    for prime in primes:
+        # Find the factor with the smallest value and multiply it by the current prime
+        smallest_idx = factors.index(min(factors))
+        factors[smallest_idx] *= prime
+    
+    factors.sort(reverse=True)
+    return factors
