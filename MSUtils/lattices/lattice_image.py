@@ -95,6 +95,7 @@ if __name__ == "__main__":
 
     from MSUtils.general.h52xdmf import write_xdmf
     write_xdmf('data/lattice_microstructures.h5', 'data/lattice_microstructures.xdmf', L, False, None, True)
+    
     # vertices, edges = octet_truss_lattice()
     # plot_lattice(vertices, edges)
     # print(check_rigidity(vertices, edges))
