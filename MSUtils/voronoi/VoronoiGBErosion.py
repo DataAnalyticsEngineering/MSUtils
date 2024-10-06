@@ -2,7 +2,7 @@ import numpy as np
 from voronoi_helpers import periodic_erosion
 import h5py
 from scipy.spatial import Delaunay
-from collections import defaultdict  # Import defaultdict for convenient dictionary handling
+from collections import defaultdict
 
 class PeriodicVoronoiImageErosion:
     def __init__(self, voroImg, voroTess, shrink_factor=5):
@@ -22,11 +22,6 @@ class PeriodicVoronoiImageErosion:
 
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
-
-    def _minimum_image_distance(self, pos1, pos2):
-        delta = pos1 - pos2
-        delta -= self.RVE_length * np.round(delta / self.RVE_length)
-        return delta
 
     def _shrink_and_analyze(self):
         unique_crystals = np.unique(self.image)
@@ -55,14 +50,11 @@ class PeriodicVoronoiImageErosion:
                 inside_indices = boundary_mask_indices[inside & ~voxel_checked]  # Filter voxels that are inside and not checked yet
 
                 ridge_pts = self.polyinfo[poly_index]  # Get the seeds that define this polyhedron
-                materials = [self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts]
-
-                # Compute diff considering periodicity
-                diff = self._minimum_image_distance(
-                    self.voroTess.voronoi.points[ridge_pts[1]],
-                    self.voroTess.voronoi.points[ridge_pts[0]]
-                )
+                diff = self.voroTess.voronoi.points[ridge_pts[1]] - self.voroTess.voronoi.points[ridge_pts[0]]
                 normal = diff / np.linalg.norm(diff)  # Normalized vector joining the seeds
+
+                # Map extended seed indices to original seed indices (crystal labels)
+                materials = [self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts]
 
                 for voxel_idx in inside_indices:
                     elem_xyz = np.ravel_multi_index(voxel_idx, (Nx, Ny, Nz))
@@ -101,8 +93,7 @@ class PeriodicVoronoiImageErosion:
             # Update polytrack with the correct index
             for pt_idx in ridge_pts:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
-                self.polytrack[crystal_label].append(len(self.polylist) - 1)
-                
+                self.polytrack[crystal_label].append(len(self.polylist) - 1)          
 
     def write_to_h5(self, dsetname_prefix, filename, order="xyz"):
         with h5py.File(filename, 'a') as h5_file:
