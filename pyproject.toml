@@ -34,3 +34,16 @@ plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
+
+[tool.pixi.feature.build.dependencies]
+setuptools = "*"
+twine = "*"
+
+[tool.pixi.feature.build.pypi-dependencies]
+build = "*"
+
+# [tool.pixi.feature.build.task]
+# build = "python -m build"
+
+[tool.pixi.environments]
+build = {features = ["build"]}
