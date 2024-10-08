@@ -3,7 +3,7 @@ name = "MSUtils"
 version = "0.1.0"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
-requires-python = ">= 3.12"
+requires-python = ">= 3.12.7"
 dependencies = []
 
 [build-system]
@@ -33,3 +33,4 @@ vtk = ">=9.3.1,<10"
 plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
+jupyter = ">=1.1.1,<2"

@@ -1,12 +1,29 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     custom_cell_magics: kql
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: default
+#     language: python
+#     name: python3
+# ---
+
+# %%
 from MSUtils.voronoi.VoronoiSeeds import VoronoiSeeds
 from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 from MSUtils.voronoi.VoronoiImage import PeriodicVoronoiImage
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
 from MSUtils.voronoi.VoronoiGBErosion import PeriodicVoronoiImageErosion
-
 import numpy as np
 
+# %%
 if __name__ == "__main__":
     
     num_crystals = 8
@@ -30,3 +47,5 @@ if __name__ == "__main__":
     
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)
     print(msimage.volume_fractions)
+
+# %%
