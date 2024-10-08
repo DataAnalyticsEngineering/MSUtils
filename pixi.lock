@@ -14097,10 +14097,10 @@ packages:
   size: 88169
   timestamp: 1725975418157
 - kind: pypi
-  name: msutils
+  name: msutilsdae
   version: 0.1.0
   path: .
-  sha256: d2e962db294ea0f1874fac2628a62a47695ff27902c5a7472eefda3120549091
+  sha256: ff53efe162d23f6ab3a0979142b73582fd6cc5e1a79ef9101f9c0566f4c82520
   requires_python: '>=3.12.7'
   editable: true
 - kind: conda

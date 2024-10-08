@@ -1,5 +1,5 @@
 [project]
-name = "MSUtils"
+name = "MSUtilsDAE"
 version = "0.1.0"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
@@ -18,7 +18,7 @@ channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
-MSUtils = { path = ".", editable = true }
+MSUtilsDAE = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 voronoi = "python MSUtils/voronoi/main.py"
