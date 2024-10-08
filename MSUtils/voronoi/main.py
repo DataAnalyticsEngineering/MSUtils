@@ -1,20 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: default
-#     language: python
-#     name: python3
-# ---
-
-# %%
 from MSUtils.voronoi.VoronoiSeeds import VoronoiSeeds
 from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 from MSUtils.voronoi.VoronoiImage import PeriodicVoronoiImage
@@ -42,13 +25,8 @@ def main():
     voroErodedImg.write("/dset_0", "data/voroImg_eroded.h5", order="zyx")
     write_xdmf("data/voroImg_eroded.h5", "data/voroImg_eroded.xdmf", microstructure_length=[1,1,1])
 
-
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)
     print(msimage.volume_fractions)
 
-# %%
 if __name__ == "__main__":
     main()
-
-
-# %%

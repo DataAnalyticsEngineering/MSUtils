@@ -1,5 +1,5 @@
 [project]
-name = "MSUtilsDAE"
+name = "MSUtils"
 version = "0.1.1"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
@@ -11,15 +11,14 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# package = ["MSUtils"]
-package-dir = {"" = "MSUtils"}
+packages = ["MSUtils"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
-MSUtilsDAE = { path = ".", editable = true }
+MSUtils = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 voronoi = "python MSUtils/voronoi/main.py"
@@ -35,7 +34,8 @@ plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
-pytest = "*"
+pytest = ">=8.3.3,<9"
+coverage = ">=7.6.1,<8"
 
 [tool.pixi.feature.build.dependencies]
 setuptools = "*"
