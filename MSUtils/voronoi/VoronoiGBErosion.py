@@ -1,5 +1,5 @@
 import numpy as np
-from voronoi_helpers import periodic_erosion
+from MSUtils.voronoi.voronoi_helpers import periodic_erosion
 import h5py
 from scipy.spatial import Delaunay
 from collections import defaultdict
@@ -118,7 +118,7 @@ class PeriodicVoronoiImageErosion:
             self.elem_xyz_array = np.empty(0, dtype=int)
             self.materials_array = np.empty((0, 2), dtype=int)
             self.normal_array = np.empty((0, 3), dtype=float)
-            
+
     def _precompute_polyhedrons(self, voroTess):
         self.polylist = []
         self.polyinfo = []
@@ -137,7 +137,7 @@ class PeriodicVoronoiImageErosion:
             # Update polytrack with the correct index
             for pt_idx in ridge_pts:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
-                self.polytrack[crystal_label].append(len(self.polylist) - 1)          
+                self.polytrack[crystal_label].append(len(self.polylist) - 1)
 
     def write(self, dsetname_prefix, filename, order="xyz"):
         with h5py.File(filename, 'a') as h5_file:
@@ -176,7 +176,7 @@ class PeriodicVoronoiImageErosion:
 
                 permuted_normals_field = normals_field
                 permuted_normals_field = normals_field.transpose(2, 1, 0, 3)  # Permute spatial dimensions
-                
+
             # Save eroded image to .h5 file
             if 'eroded_image' in grp:
                 del grp['eroded_image']
@@ -194,5 +194,3 @@ class PeriodicVoronoiImageErosion:
                 del grp['normals']
                 print("Overwriting existing 'normals' dataset.")
             grp.create_dataset('normals', data=permuted_normals_field, dtype='f8', compression="gzip", compression_opts=compression_opts)
-            
-            

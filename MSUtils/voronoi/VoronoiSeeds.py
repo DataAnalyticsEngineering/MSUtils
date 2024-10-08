@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-from scipy.stats import qmc 
+from scipy.stats import qmc
 from MSUtils.voronoi.voronoi_helpers import factorize
 
 class VoronoiSeeds:
@@ -11,12 +11,12 @@ class VoronoiSeeds:
         Parameters:
         - num_crystals: Number of seed points (or crystals) to generate.
         - RVE_length: Dimensions of the representative volume element (RVE).
-        - method: Method to generate seed points. 
+        - method: Method to generate seed points.
             - Can be one of the following: "random", "lhs-llyod", "halton", "sobol", "honeycomb", "rubiks-cube".
         - BitGeneratorSeed: Optional. Seed for the random number generator.
         - filename: Optional. HDF5 file to read data from.
         - grp_name: Optional. Group name in the HDF5 file to read data from.
-       
+
         """
         if filename and grp_name:
             self.read(filename, grp_name)
@@ -27,7 +27,7 @@ class VoronoiSeeds:
                 raise ValueError("Number of crystals must be positive.")
             if len(RVE_length) not in [2, 3]:
                 raise ValueError("RVE_length must have 2 or 3 dimensions.")
-            
+
             self.num_crystals = num_crystals
             self.RVE_length = RVE_length
             self.method = method
@@ -40,7 +40,7 @@ class VoronoiSeeds:
         """
          Returns:
         - seeds: Generated seed points of shape (num_crystals, 3).
-        - lattice_vectors: Orthonormal lattice vectors for each seed. The array has a shape 
+        - lattice_vectors: Orthonormal lattice vectors for each seed. The array has a shape
         of (num_crystals, 3, 3), where:
             * The first dimension corresponds to each crystal.
             * The second dimension enumerates the three orthonormal vectors for each crystal.
@@ -48,7 +48,7 @@ class VoronoiSeeds:
         Notes:
         A uniform distribution on the group of rotations SO(3) is used to assign random orientations
         to the grains of the aggregate. This is based on random variables X, Y, Z that are uniformly
-        distributed on the interval [0, 1) to determine three Euler angles (z-x-z convention) via 
+        distributed on the interval [0, 1) to determine three Euler angles (z-x-z convention) via
         ϕ1 = 2πX, Φ = acos(2Y - 1), ϕ2 = 2πZ.
         """
         dim = len(self.RVE_length)  # Determine the dimension (2D or 3D)
@@ -73,7 +73,7 @@ class VoronoiSeeds:
             N = factorize(self.num_crystals, dim)
             self.seeds = self._generate_lattice(N[0], N[1], N[2], self.RVE_length, stagger=False)
         else:
-            raise ValueError("Unknown sampling method! : " + self.method) 
+            raise ValueError("Unknown sampling method! : " + self.method)
             # Add more sampling methods here if needed
 
         # Generate random orientations using the Euler angles (z-x-z convention)
@@ -118,9 +118,9 @@ class VoronoiSeeds:
         - np.ndarray: Seed points in lattice arrangement.
         """
         points = []
-        a = RVE_length[0] / Nx  
-        b = RVE_length[1] / Ny  
-        c = RVE_length[2] / Nz 
+        a = RVE_length[0] / Nx
+        b = RVE_length[1] / Ny
+        c = RVE_length[2] / Nz
 
         for i in range(Nx):
             for j in range(Ny):
@@ -139,7 +139,7 @@ class VoronoiSeeds:
                     # Add the point, ensuring it's within the RVE box
                     points.append([x % RVE_length[0], y % RVE_length[1], z % RVE_length[2]])
         return np.array(points)
-    
+
     def write(self, grp_name, filename):
         with h5py.File(filename, 'a') as h5_file:
             # Check if the group already exists and delete it
@@ -180,7 +180,7 @@ def test_sampling_methods(methods):
     for method in methods:
         seeds = VoronoiSeeds(num_crystals=num_crystals, RVE_length=RVE_length, method=method, BitGeneratorSeed=BitGeneratorSeed)
         voroTess = PeriodicVoronoiTessellation(RVE_length, seeds.seeds)
-        
+
         volumes = voroTess.crystal_volumes
         hist = go.Histogram(
             x=volumes,

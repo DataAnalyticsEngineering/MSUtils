@@ -1,5 +1,5 @@
 import numpy as np
-from voronoi_helpers import calculate_polygon_area_3d
+from MSUtils.voronoi.voronoi_helpers import calculate_polygon_area_3d
 from scipy.spatial import Voronoi, ConvexHull, Delaunay
 
 class PeriodicVoronoiTessellation:
@@ -47,7 +47,7 @@ class PeriodicVoronoiTessellation:
 
         self.crystal_index_map = crystal_index_map
         return np.array(extended), np.array(orig_indices)
-    
+
     def _generate_voronoi(self):
         ext_seeds, orig_indices = self._extend_seeds()
         self.voronoi = Voronoi(ext_seeds)
@@ -90,10 +90,10 @@ class PeriodicVoronoiTessellation:
         RVE_length = self.RVE_size
         replicated_seeds = [seeds + offset * RVE_length for offset in offsets]
         all_seeds = np.vstack([seeds] + replicated_seeds)
-        
+
         # Apply Delaunay triangulation
         tri = Delaunay(all_seeds)
-        
+
         # Extract neighboring relationships
         neighbors = {}
         for simplex in tri.simplices:
@@ -108,7 +108,7 @@ class PeriodicVoronoiTessellation:
                             mapped_j = j % len(seeds)
                             if i != mapped_j:
                                 neighbors[i].add(mapped_j)
-        
+
         # Convert sets to lists
         for key in neighbors:
             neighbors[key] = sorted(list(neighbors[key]))
@@ -116,31 +116,31 @@ class PeriodicVoronoiTessellation:
         return neighbors, tri
 
     def _characterize_voronoi(self):
-        total_area = 0        
+        total_area = 0
         Ltensor = np.zeros((self.ndim, self.ndim))
         LLtensor = np.zeros((self.ndim, self.ndim, self.ndim, self.ndim))
 
         for ridge, ridge_pts in zip(self.orig_ridges, self.orig_ridge_pts):
             if -1 in ridge:  # Skip ridges at infinity
                 continue
-            
+
             # if any(pt not in self.orig_indices for pt in ridge_pts): # Skip boundary ridges
             #     continue
-            
+
             vertices = [self.voronoi.vertices[i] for i in ridge]
             ridge_N = self.voronoi.points[ridge_pts[0]] - self.voronoi.points[ridge_pts[1]]
             ridge_N /= np.linalg.norm(ridge_N)
 
             if self.ndim == 2:  # 2D case
                 ridge_area = np.linalg.norm(vertices[1] - vertices[0])
-                
+
             elif self.ndim == 3:  # 3D case
                 ridge_area = calculate_polygon_area_3d(vertices, ridge_N)
-            
+
             total_area += ridge_area
             Ltensor += ridge_area * np.einsum('i,j->ij', ridge_N, ridge_N)
             LLtensor += ridge_area * np.einsum('i,j,k,l->ijkl', ridge_N, ridge_N, ridge_N, ridge_N)
-        
+
         crystal_volumes = np.zeros(len(self.orig_regions))
         for i, region in enumerate(self.orig_regions):
             crystal_volumes[i] = ConvexHull([self.voronoi.vertices[j] for j in region]).volume

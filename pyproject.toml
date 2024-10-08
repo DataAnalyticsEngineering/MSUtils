@@ -1,6 +1,6 @@
 [project]
-name = "MSUtils"
-version = "0.1.0"
+name = "MSUtilsDAE"
+version = "0.1.1"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 requires-python = ">= 3.12.7"
@@ -11,14 +11,15 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["MSUtils"]
+# package = ["MSUtils"]
+package-dir = {"" = "MSUtils"}
 
 [tool.pixi.project]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
-MSUtils = { path = ".", editable = true }
+MSUtilsDAE = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 voronoi = "python MSUtils/voronoi/main.py"
@@ -34,3 +35,18 @@ plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
+pytest = "*"
+
+[tool.pixi.feature.build.dependencies]
+setuptools = "*"
+twine = "*"
+
+[tool.pixi.feature.build.pypi-dependencies]
+build = "*"
+
+[tool.pixi.feature.build.tasks]
+build_exes = {cmd= "rm -r dist; python -m build"}
+push_to_pypi = "python -m twine upload --verbose --repository testpypi dist/*"
+
+[tool.pixi.environments]
+build = {features = ["build"]}
