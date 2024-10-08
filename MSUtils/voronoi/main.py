@@ -41,7 +41,7 @@ if __name__ == "__main__":
     write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1,1,1])
     
     voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, shrink_factor=2)
-    voroErodedImg.write_to_h5("/dset_0", "data/voroImg_eroded.h5", order="zyx")
+    voroErodedImg.write("/dset_0", "data/voroImg_eroded.h5", order="zyx")
     write_xdmf("data/voroImg_eroded.h5", "data/voroImg_eroded.xdmf", microstructure_length=[1,1,1])
     
     
