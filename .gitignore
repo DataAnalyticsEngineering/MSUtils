@@ -189,6 +189,11 @@ Thumbs.db
 !data/fibers1.h5
 *.xdmf
 *.vtu
+
 # pixi environments
 .pixi
 *.egg-info
+
+# pytest-cov
+.coverage
+coverage

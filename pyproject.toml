@@ -33,15 +33,13 @@ h5py = ">=3.11.0,<4"
 scipy = ">=1.14.0,<2"
 matplotlib = ">=3.9.1,<4"
 scikit-image = ">=0.24.0,<0.25"
-# vtk = ">=9.3.1,<10"
+vtk = ">=9.3.1,<10"
 plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
-pytest = ">=7.0.0,<8"
 
 [tool.pixi.feature.build.dependencies]
-# setuptools = "*"
 twine = "*"
 
 [tool.pixi.feature.build.pypi-dependencies]
@@ -59,7 +57,7 @@ push_docs = "bash docs/scripts/update_docs_by_hand.sh"
 push_docs = "powershell docs/scripts/update_docs_by_hand.ps1"
 
 [tool.pixi.feature.test.tasks]
-test = "pytest --junitxml=coverage/junit/test-results.xml --cov=molten --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html"
+test = "pytest --junitxml=coverage/junit/test-results.xml --cov=msutils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html"
 lint = "ruff check"
 lint_fix = "ruff check --fix"
 lint_gh = "ruff check --output-format=github"
@@ -74,7 +72,7 @@ sphinxcontrib-mermaid = "*"
 nbsphinx = "*"
 
 [tool.pixi.feature.test.dependencies]
-pytest = "*"
+pytest = ">=7.0.0,<8"
 pytest-cov = "*"
 ruff = "*"
 
