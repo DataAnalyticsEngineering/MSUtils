@@ -64,6 +64,7 @@ lint_gh = "ruff check --output-format=github"
 lint_docs_gh = "ruff check --select D,D401 --ignore D417 --output-format=github"
 format = "ruff format"
 format_diff = "ruff format --diff"
+test_cov = {cmd= ["cp -r coverage/html/ docs/_static/test_cov/"], depends-on = ["test"]}
 
 [tool.pixi.feature.docs.dependencies]
 sphinx = "*"

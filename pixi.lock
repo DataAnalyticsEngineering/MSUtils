@@ -16285,7 +16285,7 @@ packages:
   name: msutils
   version: 0.1.1
   path: .
-  sha256: 554ad445aa5fb21c00d422cc31fc926ddbc5b139468c93ff571081f9980566b7
+  sha256: 41787a1a526b039c60d498e4c70035e320fa30010b74df55dc86b9ca40483948
   requires_python: '>=3.12.7'
   editable: true
 - kind: conda

@@ -1,7 +1,7 @@
 API
 =======
 
-Molten
+MSUtils
 ---------------------
 .. autosummary::
    :toctree: generated
