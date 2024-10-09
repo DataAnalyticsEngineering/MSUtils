@@ -9,5 +9,5 @@ You can find it [here](https://pages.github.tik.uni-stuttgart.de/DAE/MSUtils/).
 For the actual repository, go to branch main.
 
 ## Current State reflected:
-Merge pull request #6 from DAE/pypi-build  Pypi-build and more
+Merge pull request #7 from DAE:pypi-build  Docs update
 
