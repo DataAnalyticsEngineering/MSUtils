@@ -1,7 +1,13 @@
-# MSUtils
+# Documentation Branch
 
-[![Pixi Badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
+This Branch is only meant to host the documentation via github-pages. Nothing to see here. The contents of this branch are essentially a cache that's not intended to be viewed on github.com.
 
-Powered by [Pixi](https://pixi.sh/latest/). Download and run ``pixi install``.
+You can find it [here](https://pages.github.tik.uni-stuttgart.de/DAE/MSUtils/).
 
-Voronoi-Tessalation example can be run via ``pixi run voronoi``. Then, 2 files are created in the ``data``-folder.
+**It is not to be merged with main!**
+
+For the actual repository, go to branch main.
+
+## Current State reflected:
+Merge pull request #5 from DAE/branch_sk  Branch sk
+
