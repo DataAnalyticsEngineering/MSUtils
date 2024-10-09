@@ -78,12 +78,8 @@ ruff = "*"
 
 [tool.pixi.environments]
 build = {features = ["build"]}
-# docs = {features = ["docs"]}
-# test = {features = ["test"]}
 default = {features = [], solve-group = "default"}
-docs = {features = ["docs"], solve-group = "default"}
-test = {features = ["test"], solve-group = "default"}
-# all = {features = ["test", "docs"], solve-group = "default"}
+utility = {features = ["test","docs"], solve-group = "default"}
 
 [tool.ruff.lint]
 select = [
