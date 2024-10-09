@@ -1,9 +1,12 @@
 import numpy as np
 from lattice_definitions import *
+
 from MSUtils.general.MicrostructureImage import MicrostructureImage
+
 
 def physical_to_voxel(point, dimensions, shape):
     return np.round(point / dimensions * (np.array(shape) - 1)).astype(int)
+
 
 def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
     start = np.array(start)
@@ -21,20 +24,29 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
     for point in points:
         voxel_point = physical_to_voxel(point, L, microstructure.shape)
         x, y, z = voxel_point
-        x_min, x_max = max(0, int(x - voxel_radius[0])), min(microstructure.shape[0], int(x + voxel_radius[0] + 1))
-        y_min, y_max = max(0, int(y - voxel_radius[1])), min(microstructure.shape[1], int(y + voxel_radius[1] + 1))
-        z_min, z_max = max(0, int(z - voxel_radius[2])), min(microstructure.shape[2], int(z + voxel_radius[2] + 1))
+        x_min, x_max = max(0, int(x - voxel_radius[0])), min(
+            microstructure.shape[0], int(x + voxel_radius[0] + 1)
+        )
+        y_min, y_max = max(0, int(y - voxel_radius[1])), min(
+            microstructure.shape[1], int(y + voxel_radius[1] + 1)
+        )
+        z_min, z_max = max(0, int(z - voxel_radius[2])), min(
+            microstructure.shape[2], int(z + voxel_radius[2] + 1)
+        )
 
-        if strut_type == 'circle':
+        if strut_type == "circle":
             xx, yy, zz = np.ogrid[x_min:x_max, y_min:y_max, z_min:z_max]
-            distance = (((xx - x) * voxel_sizes[0]) ** 2 +
-                        ((yy - y) * voxel_sizes[1]) ** 2 +
-                        ((zz - z) * voxel_sizes[2]) ** 2)
-            mask = distance <= radius ** 2
+            distance = (
+                ((xx - x) * voxel_sizes[0]) ** 2
+                + ((yy - y) * voxel_sizes[1]) ** 2
+                + ((zz - z) * voxel_sizes[2]) ** 2
+            )
+            mask = distance <= radius**2
 
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
-def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, strut_type='circle'):
+
+def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"):
     """
     Create a lattice microstructure image.
 
@@ -59,29 +71,29 @@ def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1,1,1], radius=0.05, str
 
     return microstructure
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     Nx, Ny, Nz = 256, 256, 256  # microstructure resolution
     L = [1.0, 1.0, 1.0]  # microstructure length
     radius = 0.05  # radius of the struts
-    strut_type = 'circle'
+    strut_type = "circle"
 
     unit_cell_types = {
-        'BCC': BCC_lattice,
-        'BCCz': BCCz_lattice,
-        'cubic': cubic_lattice,
-        'FCC': FCC_lattice,
-        'FBCC': FBCC_lattice,
-        'isotruss': isotruss_lattice,
-        'octet': octet_truss_lattice,
+        "BCC": BCC_lattice,
+        "BCCz": BCCz_lattice,
+        "cubic": cubic_lattice,
+        "FCC": FCC_lattice,
+        "FBCC": FBCC_lattice,
+        "isotruss": isotruss_lattice,
+        "octet": octet_truss_lattice,
         # Add more unit cells here...
     }
 
     metadata = {
-        'resolution [Nx, Ny, Nz]': [Nx, Ny, Nz],
-        'length [Lx, Ly, Lz]': L,
-        'strut radius': radius,
-        'strut type': strut_type
+        "resolution [Nx, Ny, Nz]": [Nx, Ny, Nz],
+        "length [Lx, Ly, Lz]": L,
+        "strut radius": radius,
+        "strut type": strut_type,
     }
 
     microstructures = {}
@@ -89,13 +101,16 @@ if __name__ == "__main__":
         image = create_lattice_image(Nx, Ny, Nz, unit_cell_func, L, radius, strut_type)
 
         tmp_metadata = metadata.copy()
-        tmp_metadata['lattice type'] = name
+        tmp_metadata["lattice type"] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
-        microstructures[name].write(h5_filename='data/lattice_microstructures.h5', dset_name=name)
+        microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
 
     from MSUtils.general.h52xdmf import write_xdmf
-    write_xdmf('data/lattice_microstructures.h5', 'data/lattice_microstructures.xdmf', L, False, None, True)
-    
+
+    write_xdmf(
+        "data/lattice_microstructures.h5", "data/lattice_microstructures.xdmf", L, False, None, True
+    )
+
     # vertices, edges = octet_truss_lattice()
     # plot_lattice(vertices, edges)
     # print(check_rigidity(vertices, edges))

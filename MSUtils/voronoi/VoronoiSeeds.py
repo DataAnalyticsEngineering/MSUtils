@@ -1,10 +1,20 @@
-import numpy as np
 import h5py
+import numpy as np
 from scipy.stats import qmc
+
 from MSUtils.voronoi.voronoi_helpers import factorize
 
+
 class VoronoiSeeds:
-    def __init__(self, num_crystals=None, RVE_length=[1, 1, 1], method="sobol", BitGeneratorSeed=None, filename=None, grp_name=None):
+    def __init__(
+        self,
+        num_crystals=None,
+        RVE_length=[1, 1, 1],
+        method="sobol",
+        BitGeneratorSeed=None,
+        filename=None,
+        grp_name=None,
+    ):
         """
         Generate seed points (crystals) for 3D Voronoi tessellations and their associated orthonormal lattice vectors.
 
@@ -52,20 +62,24 @@ class VoronoiSeeds:
         ϕ1 = 2πX, Φ = acos(2Y - 1), ϕ2 = 2πZ.
         """
         dim = len(self.RVE_length)  # Determine the dimension (2D or 3D)
-        rng = np.random.default_rng(self.BitGeneratorSeed)  # Create a random number generator with the specified seed
+        rng = np.random.default_rng(
+            self.BitGeneratorSeed
+        )  # Create a random number generator with the specified seed
 
         # Generate seeds based on method
         if self.method == "random":
             self.seeds = rng.random((self.num_crystals, dim)) * np.array(self.RVE_length)
         elif self.method == "lhs-lloyd":
-            sampler = qmc.LatinHypercube(d=dim, seed=self.BitGeneratorSeed, optimization='lloyd')
+            sampler = qmc.LatinHypercube(d=dim, seed=self.BitGeneratorSeed, optimization="lloyd")
             self.seeds = sampler.random(n=self.num_crystals) * np.array(self.RVE_length)
         elif self.method == "halton":
             sampler = qmc.Halton(d=dim, seed=self.BitGeneratorSeed)
             self.seeds = sampler.random(n=self.num_crystals) * np.array(self.RVE_length)
         elif self.method == "sobol":
             sampler = qmc.Sobol(d=dim, seed=self.BitGeneratorSeed)
-            self.seeds = sampler.random_base2(m=int(np.ceil(np.log2(self.num_crystals))))[:self.num_crystals] * np.array(self.RVE_length)
+            self.seeds = sampler.random_base2(m=int(np.ceil(np.log2(self.num_crystals))))[
+                : self.num_crystals
+            ] * np.array(self.RVE_length)
         elif self.method == "honeycomb":
             N = factorize(self.num_crystals, dim)
             self.seeds = self._generate_lattice(N[0], N[1], N[2], self.RVE_length, stagger=True)
@@ -97,11 +111,13 @@ class VoronoiSeeds:
         R32 = c2 * sP
         R33 = cP
 
-        rot_matrices = np.stack((R11, R12, R13, R21, R22, R23, R31, R32, R33), axis=-1).reshape(self.num_crystals, 3, 3)
+        rot_matrices = np.stack((R11, R12, R13, R21, R22, R23, R31, R32, R33), axis=-1).reshape(
+            self.num_crystals, 3, 3
+        )
 
         # Using the rotation matrices, we compute the lattice vectors for each seed
         initial_orientation = np.eye(3)
-        self.lattice_vectors = np.einsum('nij,jk->nik', rot_matrices, initial_orientation)
+        self.lattice_vectors = np.einsum("nij,jk->nik", rot_matrices, initial_orientation)
 
     def _generate_lattice(self, Nx, Ny, Nz, RVE_length, stagger=True):
         """
@@ -141,7 +157,7 @@ class VoronoiSeeds:
         return np.array(points)
 
     def write(self, grp_name, filename):
-        with h5py.File(filename, 'a') as h5_file:
+        with h5py.File(filename, "a") as h5_file:
             # Check if the group already exists and delete it
             if grp_name in h5_file:
                 del h5_file[grp_name]
@@ -151,20 +167,39 @@ class VoronoiSeeds:
             compression_opts = 9
 
             # Create the datasets and write the data
-            grp.create_dataset('seed_positions', data=self.seeds, dtype=np.float64, compression="gzip", compression_opts=compression_opts)
-            grp.create_dataset('lattice_vectors', data=self.lattice_vectors, dtype=np.float64, compression="gzip", compression_opts=compression_opts)
-            grp.create_dataset('Microstructure_length', data=self.RVE_length, dtype=np.float64, compression="gzip", compression_opts=compression_opts)
+            grp.create_dataset(
+                "seed_positions",
+                data=self.seeds,
+                dtype=np.float64,
+                compression="gzip",
+                compression_opts=compression_opts,
+            )
+            grp.create_dataset(
+                "lattice_vectors",
+                data=self.lattice_vectors,
+                dtype=np.float64,
+                compression="gzip",
+                compression_opts=compression_opts,
+            )
+            grp.create_dataset(
+                "Microstructure_length",
+                data=self.RVE_length,
+                dtype=np.float64,
+                compression="gzip",
+                compression_opts=compression_opts,
+            )
 
     def read(self, filename, grp_name):
-        with h5py.File(filename, 'r') as h5_file:
+        with h5py.File(filename, "r") as h5_file:
             if grp_name not in h5_file:
                 raise ValueError(f"Group {grp_name} not found in file {filename}.")
             grp = h5_file[grp_name]
 
-            self.seeds = grp['seed_positions'][:]
-            self.lattice_vectors = grp['lattice_vectors'][:]
-            self.RVE_length = grp['Microstructure_length'][:]
+            self.seeds = grp["seed_positions"][:]
+            self.lattice_vectors = grp["lattice_vectors"][:]
+            self.RVE_length = grp["Microstructure_length"][:]
             self.num_crystals = self.seeds.shape[0]
+
 
 def test_sampling_methods(methods):
     num_crystals = 1000
@@ -178,16 +213,16 @@ def test_sampling_methods(methods):
 
     fig = make_subplots(rows=1, cols=1)
     for method in methods:
-        seeds = VoronoiSeeds(num_crystals=num_crystals, RVE_length=RVE_length, method=method, BitGeneratorSeed=BitGeneratorSeed)
+        seeds = VoronoiSeeds(
+            num_crystals=num_crystals,
+            RVE_length=RVE_length,
+            method=method,
+            BitGeneratorSeed=BitGeneratorSeed,
+        )
         voroTess = PeriodicVoronoiTessellation(RVE_length, seeds.seeds)
 
         volumes = voroTess.crystal_volumes
-        hist = go.Histogram(
-            x=volumes,
-            nbinsx=nbins,
-            name=method,
-            opacity=1.0
-        )
+        hist = go.Histogram(x=volumes, nbinsx=nbins, name=method, opacity=1.0)
         fig.add_trace(hist)
 
     fig.update_layout(
@@ -199,13 +234,13 @@ def test_sampling_methods(methods):
         width=1400,
         height=900,
         font=dict(size=20),
-        template='simple_white',
+        template="simple_white",
     )
     fig.update_xaxes(
         showgrid=True,
         gridwidth=1,
-        gridcolor='lightgrey',  # Set the grid color to make it visible
-        layer='above traces',  # Bring grid lines to the front
+        gridcolor="lightgrey",  # Set the grid color to make it visible
+        layer="above traces",  # Bring grid lines to the front
         mirror=True,
         ticks="inside",
         tickwidth=2,
@@ -217,8 +252,8 @@ def test_sampling_methods(methods):
     fig.update_yaxes(
         showgrid=True,
         gridwidth=1,
-        gridcolor='lightgrey',  # Set the grid color to make it visible
-        layer='above traces',  # Bring grid lines to the front
+        gridcolor="lightgrey",  # Set the grid color to make it visible
+        layer="above traces",  # Bring grid lines to the front
         mirror=True,
         ticks="inside",
         tickwidth=2,
@@ -228,6 +263,7 @@ def test_sampling_methods(methods):
         automargin=True,
     )
     fig.show()
+
 
 if __name__ == "__main__":
     # Example parameters
@@ -239,7 +275,12 @@ if __name__ == "__main__":
     filename = "data/voronoi_seeds.h5"
 
     # Create an instance of VoronoiSeeds
-    seeds = VoronoiSeeds(num_crystals=num_crystals, RVE_length=RVE_length, method=method, BitGeneratorSeed=BitGeneratorSeed)
+    seeds = VoronoiSeeds(
+        num_crystals=num_crystals,
+        RVE_length=RVE_length,
+        method=method,
+        BitGeneratorSeed=BitGeneratorSeed,
+    )
 
     # Write the seeds to an HDF5 file
     seeds.write(grp_name=grp_name, filename=filename)

@@ -1,7 +1,8 @@
 import numpy as np
-import skimage.transform
 import scipy.ndimage
 import skimage.morphology
+import skimage.transform
+
 
 def resize_image(data_array, scale=None, target_resolution=None):
     """
@@ -28,29 +29,40 @@ def resize_image(data_array, scale=None, target_resolution=None):
         scale = [2, 2, 2]
         new_shape = np.multiply(data_array.shape, scale)
 
-    resized_image = skimage.transform.resize(data_array, new_shape, preserve_range=True, anti_aliasing=False, order=0)
-    
+    resized_image = skimage.transform.resize(
+        data_array, new_shape, preserve_range=True, anti_aliasing=False, order=0
+    )
+
     if np.all(scale > [1, 1, 1]):
         if np.all(scale[0] == scale[1] == scale[2]):
             radius = int(scale[0] * 2)  # Adjust the radius as needed
             footprint = skimage.morphology.octahedron(radius)
-            resized_image = scipy.ndimage.median_filter(resized_image, footprint=footprint, mode='wrap')
+            resized_image = scipy.ndimage.median_filter(
+                resized_image, footprint=footprint, mode="wrap"
+            )
         else:
             kernel_size = [2 * s for s in scale]  # Default kernel size is twice the scale factor
-            resized_image = scipy.ndimage.median_filter(resized_image, size=kernel_size, mode='wrap')
-    
+            resized_image = scipy.ndimage.median_filter(
+                resized_image, size=kernel_size, mode="wrap"
+            )
+
     return resized_image
 
+
 if __name__ == "__main__":
-    
     from MicrostructureImage import MicrostructureImage
 
-    ms = MicrostructureImage(h5_filename='data/fibers1.h5', dset_name='/img')
-    ms_resized = MicrostructureImage(image=resize_image(ms.image, target_resolution=[512,512,512]))
-    ms_resized.write(h5_filename='data/test_resize.h5', dset_name='ms')
-    
+    ms = MicrostructureImage(h5_filename="data/fibers1.h5", dset_name="/img")
+    ms_resized = MicrostructureImage(
+        image=resize_image(ms.image, target_resolution=[512, 512, 512])
+    )
+    ms_resized.write(h5_filename="data/test_resize.h5", dset_name="ms")
+
     error = {}
     for key in ms.volume_fractions.keys():
-        error[key] = (ms.volume_fractions[key] - ms_resized.volume_fractions[key]) * 100 / ms.volume_fractions[key]
+        error[key] = (
+            (ms.volume_fractions[key] - ms_resized.volume_fractions[key])
+            * 100
+            / ms.volume_fractions[key]
+        )
         print(f"Resizing volume fraction error for phase {key}: {error[key]:.6f}%")
-    

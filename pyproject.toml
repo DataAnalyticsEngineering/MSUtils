@@ -11,7 +11,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["MSUtils"]
+package-dir = {"" = "MSUtils"}
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -22,6 +22,7 @@ MSUtils = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 voronoi = "python MSUtils/voronoi/main.py"
+pre-commit = "pre-commit run --all-files"
 
 [tool.pixi.dependencies]
 numpy = ">=2.0.1,<3"
@@ -36,6 +37,8 @@ sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
 pytest = ">=8.3.3,<9"
 coverage = ">=7.6.1,<8"
+pre-commit = ">=4.0.0,<5"
+black = ">=24.8.0,<25"
 
 [tool.pixi.feature.build.dependencies]
 setuptools = "*"

@@ -1,9 +1,13 @@
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.fft import fftn, ifftn
 from scipy.optimize import curve_fit
 
+
 def exponential_decay(x, l):
     return np.exp(-x / l)
+
 
 def compute_correlation_length(img):
     """
@@ -45,11 +49,12 @@ def compute_correlation_length(img):
 
     return aspect_ratio, cl, autocorr
 
+
 def plot_mid_planes(autocorr):
     """
     Visualize the mid-planes (XY, YZ, XZ) of the autocorrelation function for 3D data.
     For 2D data, just visualize the data itself.
-    
+
     Parameters:
     - autocorr: The autocorrelation function as a NumPy array.
     """
@@ -58,28 +63,33 @@ def plot_mid_planes(autocorr):
     if autocorr.ndim == 3:
         nz, ny, nx = autocorr_shifted.shape
         fig, axes = plt.subplots(1, 3, figsize=(18, 6), dpi=300)
-        planes = [autocorr_shifted[nz//2, :, :], autocorr_shifted[:, ny//2, :], autocorr_shifted[:, :, nx//2]]
-        titles = ['XY Mid-Plane', 'YZ Mid-Plane', 'XZ Mid-Plane']
+        planes = [
+            autocorr_shifted[nz // 2, :, :],
+            autocorr_shifted[:, ny // 2, :],
+            autocorr_shifted[:, :, nx // 2],
+        ]
+        titles = ["XY Mid-Plane", "YZ Mid-Plane", "XZ Mid-Plane"]
 
         for ax, plane, title in zip(axes, planes, titles):
-            im = ax.imshow(plane, cmap='viridis')
+            im = ax.imshow(plane, cmap="viridis")
             ax.set_title(title, fontsize=14)
-            ax.axis('off')
+            ax.axis("off")
 
         # Colorbar configuration
         cbar_ax = fig.add_axes([0.15, 0.05, 0.7, 0.03])
-        fig.colorbar(im, cax=cbar_ax, orientation='horizontal')
+        fig.colorbar(im, cax=cbar_ax, orientation="horizontal")
 
     elif autocorr.ndim == 2:
         plt.figure(figsize=(6, 6), dpi=300)
-        plt.imshow(autocorr_shifted, cmap='viridis')
-        plt.title('2D Autocorrelation', fontsize=14)
-        plt.axis('off')
-        plt.colorbar(orientation='horizontal')
+        plt.imshow(autocorr_shifted, cmap="viridis")
+        plt.title("2D Autocorrelation", fontsize=14)
+        plt.axis("off")
+        plt.colorbar(orientation="horizontal")
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.2, wspace=0.3, hspace=0.3)
-    plt.savefig('mid_planes.png', bbox_inches='tight')
+    plt.savefig("data/mid_planes.png", bbox_inches="tight")
     plt.show()
+
 
 def visualize_correlation(cl, autocorr):
     """
@@ -97,45 +107,63 @@ def visualize_correlation(cl, autocorr):
 
     fig, ax = plt.subplots(figsize=(12, 12), dpi=300)
     if autocorr.ndim == 3:
-        directions = ['X', 'Y', 'Z']  # The three directions for 3D data
+        directions = ["X", "Y", "Z"]  # The three directions for 3D data
         # Indices for slicing from the center to halfway in each direction
-        indices = [(slice(None), autocorr.shape[1]//2, autocorr.shape[2]//2), 
-                   (autocorr.shape[0]//2, slice(None), autocorr.shape[2]//2), 
-                   (autocorr.shape[0]//2, autocorr.shape[1]//2, slice(None))]
+        indices = [
+            (slice(None), autocorr.shape[1] // 2, autocorr.shape[2] // 2),
+            (autocorr.shape[0] // 2, slice(None), autocorr.shape[2] // 2),
+            (autocorr.shape[0] // 2, autocorr.shape[1] // 2, slice(None)),
+        ]
     elif autocorr.ndim == 2:
-        directions = ['X', 'Y']  # The two directions for 2D data
-        indices = [(slice(None), autocorr.shape[1]//2), (autocorr.shape[0]//2, slice(None))]
+        directions = ["X", "Y"]  # The two directions for 2D data
+        indices = [(slice(None), autocorr.shape[1] // 2), (autocorr.shape[0] // 2, slice(None))]
 
     colors = cm.viridis(np.linspace(0, 1, len(directions)))
-    markers = ['o', 's', '^', 'd'][:len(directions)]
+    markers = ["o", "s", "^", "d"][: len(directions)]
 
     for i_dim, direction, color, marker in zip(range(len(directions)), directions, colors, markers):
         line_full = autocorr_centered[indices[i_dim]].ravel()
         mid_point = len(line_full) // 2  # Find the center
         line = line_full[mid_point:]  # Take only the second half from the center
         x = np.arange(len(line))
-        ax.plot(x, line, label=f'{direction} Autocorrelation', color=color, linestyle='-', marker=marker, markersize=5)
-        ax.plot(x, exponential_decay(x, cl[i_dim]), label=f'{direction} Exponential Fit', color=color, linestyle='--', linewidth=2)
+        ax.plot(
+            x,
+            line,
+            label=f"{direction} Autocorrelation",
+            color=color,
+            linestyle="-",
+            marker=marker,
+            markersize=5,
+        )
+        ax.plot(
+            x,
+            exponential_decay(x, cl[i_dim]),
+            label=f"{direction} Exponential Fit",
+            color=color,
+            linestyle="--",
+            linewidth=2,
+        )
 
-    ax.set_title('Autocorrelation and Exponential Fits', fontsize=24)
-    ax.set_xlabel('Voxel Separation Distance', fontsize=24)
-    ax.set_ylabel('Autocorrelation', fontsize=24)
+    ax.set_title("Autocorrelation and Exponential Fits", fontsize=24)
+    ax.set_xlabel("Voxel Separation Distance", fontsize=24)
+    ax.set_ylabel("Autocorrelation", fontsize=24)
     ax.legend(fontsize=20)
     ax.grid(True)
     plt.tight_layout()
-    plt.savefig('correlation_lengths.png', bbox_inches='tight')
+    plt.savefig("data/correlation_lengths.png", bbox_inches="tight")
     plt.show()
 
-if __name__ == "__main__":
-    
+
+def main():
     from MicrostructureImage import MicrostructureImage
 
-    ms = MicrostructureImage(h5_filename='data/fibers1.h5', dset_name='/img')
+    ms = MicrostructureImage(h5_filename="data/fibers1.h5", dset_name="/img")
     aspect_ratio, cl, autocorr = compute_correlation_length(ms.image)
     print(f"Correlation Lengths: {cl}")
     print(f"Aspect Ratio: {aspect_ratio}")
 
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-
     visualize_correlation(cl, autocorr)
+
+
+if __name__ == "__main__":
+    main()
