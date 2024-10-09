@@ -11,7 +11,7 @@ Set-Location temp_main
 git clone https://github.tik.uni-stuttgart.de/DAE/MSUtils.git .
 $commit = git log -1 --pretty=%B
 # Build new website
-# pixi shell -e docs -v
+pixi run test_cov
 pixi run -v -e docs sphinx-build -M html docs docs/_build
 Write-Output "compiling done!"
 # Copying
