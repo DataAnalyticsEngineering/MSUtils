@@ -1,0 +1,6 @@
+MSUtils.general.ComBoMicrostructureImage.main
+=============================================
+
+.. currentmodule:: MSUtils.general.ComBoMicrostructureImage
+
+.. autofunction:: main

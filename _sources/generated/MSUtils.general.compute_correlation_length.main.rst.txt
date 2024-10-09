@@ -1,0 +1,6 @@
+MSUtils.general.compute\_correlation\_length.main
+=================================================
+
+.. currentmodule:: MSUtils.general.compute_correlation_length
+
+.. autofunction:: main
