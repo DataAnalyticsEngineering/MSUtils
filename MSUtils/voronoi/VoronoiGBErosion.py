@@ -1,8 +1,11 @@
-import numpy as np
-from MSUtils.voronoi.voronoi_helpers import periodic_erosion
-import h5py
-from scipy.spatial import Delaunay
 from collections import defaultdict
+
+import h5py
+import numpy as np
+from scipy.spatial import Delaunay
+
+from MSUtils.voronoi.voronoi_helpers import periodic_erosion
+
 
 class PeriodicVoronoiImageErosion:
     def __init__(self, voroImg, voroTess, shrink_factor=5):
@@ -39,7 +42,7 @@ class PeriodicVoronoiImageErosion:
         voxel_scale = np.array([hx, hy, hz])
 
         for crystal in unique_crystals:
-            crystal_mask = (self.image == crystal)
+            crystal_mask = self.image == crystal
             eroded_mask = periodic_erosion(crystal_mask, self.shrink_factor)
             boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
             boundary_mask_indices = np.array(np.where(boundary_mask)).T  # Shape: (num_voxels, 3)
@@ -61,7 +64,9 @@ class PeriodicVoronoiImageErosion:
                 # Bounding box filtering
                 min_coords = np.min(points, axis=0)
                 max_coords = np.max(points, axis=0)
-                bbox_mask = np.all((voxel_coords >= min_coords) & (voxel_coords <= max_coords), axis=1)
+                bbox_mask = np.all(
+                    (voxel_coords >= min_coords) & (voxel_coords <= max_coords), axis=1
+                )
                 candidate_voxel_coords = voxel_coords[bbox_mask]
                 candidate_indices_in_voxel_coords = np.where(bbox_mask)[0]
 
@@ -82,7 +87,10 @@ class PeriodicVoronoiImageErosion:
                 elem_xyz_array = np.ravel_multi_index(inside_indices.T, (Nx, Ny, Nz))
 
                 ridge_pts = self.polyinfo[poly_index]  # Seed indices
-                diff = self.voroTess.voronoi.points[ridge_pts[1]] - self.voroTess.voronoi.points[ridge_pts[0]]
+                diff = (
+                    self.voroTess.voronoi.points[ridge_pts[1]]
+                    - self.voroTess.voronoi.points[ridge_pts[0]]
+                )
                 norm = np.linalg.norm(diff)
                 if norm == 0:
                     continue  # Avoid division by zero
@@ -102,7 +110,9 @@ class PeriodicVoronoiImageErosion:
                 # Mark checked voxels
                 voxel_checked[inside_indices_in_voxel_coords] = True
 
-            print(f"In crystal number-{crystal}, number of marked voxels-{voxel_checked.sum()} out of {len(voxel_checked)} voxels")
+            print(
+                f"In crystal number-{crystal}, number of marked voxels-{voxel_checked.sum()} out of {len(voxel_checked)} voxels"
+            )
             eroded_image[eroded_mask] = crystal
 
         self.eroded_image = eroded_image
@@ -124,12 +134,16 @@ class PeriodicVoronoiImageErosion:
         self.polyinfo = []
         self.polytrack = defaultdict(list)
 
-        for i, (ridge, ridge_pts) in enumerate(zip(voroTess.voronoi.ridge_vertices, voroTess.voronoi.ridge_points)):
+        for i, (ridge, ridge_pts) in enumerate(
+            zip(voroTess.voronoi.ridge_vertices, voroTess.voronoi.ridge_points)
+        ):
             if -1 in ridge:
                 # Skip infinite ridges
                 continue
 
-            points = np.vstack((voroTess.voronoi.vertices[ridge], voroTess.voronoi.points[ridge_pts]))
+            points = np.vstack(
+                (voroTess.voronoi.vertices[ridge], voroTess.voronoi.points[ridge_pts])
+            )
             delaunay = Delaunay(points)
             self.polylist.append(delaunay)
             self.polyinfo.append(ridge_pts)
@@ -140,19 +154,31 @@ class PeriodicVoronoiImageErosion:
                 self.polytrack[crystal_label].append(len(self.polylist) - 1)
 
     def write(self, dsetname_prefix, filename, order="xyz"):
-        with h5py.File(filename, 'a') as h5_file:
+        with h5py.File(filename, "a") as h5_file:
             grp = h5_file.require_group(dsetname_prefix)
             compression_opts = 6
 
             # Define dtype for the structured numpy array for GBVoxelInfo
-            voxel_info_dtype = np.dtype([
-                ('coords', 'i8', (3,)),
-                ('elem_xyz', 'i8'),
-                ('materials', 'i8', (2,)),
-                ('normal', 'f8', (3,))
-            ])
+            voxel_info_dtype = np.dtype(
+                [
+                    ("coords", "i8", (3,)),
+                    ("elem_xyz", "i8"),
+                    ("materials", "i8", (2,)),
+                    ("normal", "f8", (3,)),
+                ]
+            )
             # Convert lists to a structured numpy array
-            voxel_info_array = np.array(list(zip(self.coords_array, self.elem_xyz_array, self.materials_array, self.normal_array)), dtype=voxel_info_dtype)
+            voxel_info_array = np.array(
+                list(
+                    zip(
+                        self.coords_array,
+                        self.elem_xyz_array,
+                        self.materials_array,
+                        self.normal_array,
+                    )
+                ),
+                dtype=voxel_info_dtype,
+            )
 
             # Create a new field for normals, taking shape from the original image
             Nx, Ny, Nz = self.image.shape
@@ -168,29 +194,50 @@ class PeriodicVoronoiImageErosion:
                 permuted_voxel_info_array = voxel_info_array.copy()
                 permuted_normals_field = normals_field
             elif order == "zyx":
-                permuted_eroded_image = self.eroded_image.transpose(2, 1, 0)  # Permute spatial dimensions
+                permuted_eroded_image = self.eroded_image.transpose(
+                    2, 1, 0
+                )  # Permute spatial dimensions
 
                 permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_voxel_info_array['coords'] = voxel_info_array['coords'][:, ::-1]
-                permuted_voxel_info_array['normal'] = voxel_info_array['normal'][:, ::-1]
+                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][:, ::-1]
+                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][:, ::-1]
 
                 permuted_normals_field = normals_field
-                permuted_normals_field = normals_field.transpose(2, 1, 0, 3)  # Permute spatial dimensions
+                permuted_normals_field = normals_field.transpose(
+                    2, 1, 0, 3
+                )  # Permute spatial dimensions
 
             # Save eroded image to .h5 file
-            if 'eroded_image' in grp:
-                del grp['eroded_image']
+            if "eroded_image" in grp:
+                del grp["eroded_image"]
                 print("Overwriting existing 'eroded_image' dataset.")
-            grp.create_dataset('eroded_image', data=permuted_eroded_image, dtype=np.int32, compression="gzip", compression_opts=compression_opts)
+            grp.create_dataset(
+                "eroded_image",
+                data=permuted_eroded_image,
+                dtype=np.int32,
+                compression="gzip",
+                compression_opts=compression_opts,
+            )
 
             # Save GBVoxelInfo to .h5 file
-            if 'GBVoxelInfo' in grp:
-                del grp['GBVoxelInfo']
+            if "GBVoxelInfo" in grp:
+                del grp["GBVoxelInfo"]
                 print("Overwriting existing 'GBVoxelInfo' dataset.")
-            grp.create_dataset('GBVoxelInfo', data=permuted_voxel_info_array, compression="gzip", compression_opts=compression_opts)
+            grp.create_dataset(
+                "GBVoxelInfo",
+                data=permuted_voxel_info_array,
+                compression="gzip",
+                compression_opts=compression_opts,
+            )
 
             # Save normals to .h5 file
-            if 'normals' in grp:
-                del grp['normals']
+            if "normals" in grp:
+                del grp["normals"]
                 print("Overwriting existing 'normals' dataset.")
-            grp.create_dataset('normals', data=permuted_normals_field, dtype='f8', compression="gzip", compression_opts=compression_opts)
+            grp.create_dataset(
+                "normals",
+                data=permuted_normals_field,
+                dtype="f8",
+                compression="gzip",
+                compression_opts=compression_opts,
+            )

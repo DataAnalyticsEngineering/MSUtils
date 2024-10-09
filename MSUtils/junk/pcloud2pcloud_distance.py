@@ -1,22 +1,25 @@
-import numpy as np
 import time
+
+import numpy as np
+
 
 def euclidean_dist_matrix(A, B):
     """Compute the squared Euclidean distance matrix using the formula."""
     l_A = np.linalg.norm(A, axis=1)
     l_B = np.linalg.norm(B, axis=1)
-    d_AB = (l_A**2)[:, None] + (l_B**2)[None, :] - 2.*A@B.T
+    d_AB = (l_A**2)[:, None] + (l_B**2)[None, :] - 2.0 * A @ B.T
     return d_AB
+
 
 def periodic_dist_matrix(A, B, RVE_length):
     """Compute periodic distance matrix between points in A and B."""
     # Difference between each combination of points
     diff = A[:, np.newaxis, :] - B[np.newaxis, :, :]
-    
+
     # Handle periodicity
     diff %= RVE_length
     diff = np.where(diff > 0.5 * RVE_length, diff - RVE_length, diff)
-    
+
     # Squared distances
     dist_sq = np.sum(diff**2, axis=-1)
     return dist_sq
@@ -34,7 +37,7 @@ idx_euclidean = np.argmin(d_AB, axis=1)
 
 # Time the periodic distance approach
 start_time = time.time()
-d_periodic = periodic_dist_matrix(A, B, np.array([100,100,100]))
+d_periodic = periodic_dist_matrix(A, B, np.array([100, 100, 100]))
 periodic_time = time.time() - start_time
 print(f"Periodic distance computation took {periodic_time} seconds.")
 idx_periodic = np.argmin(d_periodic, axis=1)
@@ -54,7 +57,7 @@ print(f"Mean difference between d_AB and d_periodic: {mean_diff}")
 print(f"Standard deviation difference between d_AB and d_periodic: {std_diff}")
 
 # Check for any significant differences in the matrices
-significant_diff_count = np.sum(np.abs(d_AB - d_periodic) > 1e-6) 
+significant_diff_count = np.sum(np.abs(d_AB - d_periodic) > 1e-6)
 print(f"Number of significantly different entries: {significant_diff_count}")
 
 # For further verification, display differences in the matrices
@@ -67,4 +70,3 @@ if not are_dists_same:
     significant_diff_indices = np.argwhere(np.abs(differences) > 1e-6)
     print("\nIndices of significantly different entries:")
     print(significant_diff_indices)
-

@@ -1,27 +1,13 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: default
-#     language: python
-#     name: python3
-# ---
+import numpy as np
+import vtk as vtk
 
-# %%
+from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.general.MicrostructureImage import MicrostructureImage
+from MSUtils.voronoi.VoronoiGBErosion import PeriodicVoronoiImageErosion
+from MSUtils.voronoi.VoronoiImage import PeriodicVoronoiImage
 from MSUtils.voronoi.VoronoiSeeds import VoronoiSeeds
 from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
-from MSUtils.voronoi.VoronoiImage import PeriodicVoronoiImage
-from MSUtils.general.MicrostructureImage import MicrostructureImage
-from MSUtils.general.h52xdmf import write_xdmf
-from MSUtils.voronoi.VoronoiGBErosion import PeriodicVoronoiImageErosion
-import numpy as np
+
 
 def main():
     num_crystals = 8
@@ -36,19 +22,17 @@ def main():
     Nx, Ny, Nz = 64, 64, 64
     voroImg = PeriodicVoronoiImage([Nx, Ny, Nz], SeedInfo.seeds, L)
     voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="zyx")
-    write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1,1,1])
+    write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1, 1, 1])
 
     voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, shrink_factor=2)
     voroErodedImg.write("/dset_0", "data/voroImg_eroded.h5", order="zyx")
-    write_xdmf("data/voroImg_eroded.h5", "data/voroImg_eroded.xdmf", microstructure_length=[1,1,1])
-
+    write_xdmf(
+        "data/voroImg_eroded.h5", "data/voroImg_eroded.xdmf", microstructure_length=[1, 1, 1]
+    )
 
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)
     print(msimage.volume_fractions)
 
-# %%
+
 if __name__ == "__main__":
     main()
-
-
-# %%
