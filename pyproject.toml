@@ -7,11 +7,14 @@ requires-python = ">= 3.12.7"
 dependencies = []
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-package-dir = {"" = "MSUtils"}
+[tool.hatch.build.targets.sdist]
+include = ["MSUtils"]
+
+[tool.hatch.build.targets.wheel]
+include = ["MSUtils"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -35,13 +38,8 @@ plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
-pytest = ">=8.3.3,<9"
-coverage = ">=7.6.1,<8"
-pre-commit = ">=4.0.0,<5"
-black = ">=24.8.0,<25"
 
 [tool.pixi.feature.build.dependencies]
-setuptools = "*"
 twine = "*"
 
 [tool.pixi.feature.build.pypi-dependencies]
@@ -51,5 +49,72 @@ build = "*"
 build_exes = {cmd= "rm -r dist; python -m build"}
 push_to_pypi = "python -m twine upload --verbose --repository testpypi dist/*"
 
+[tool.pixi.feature.docs.tasks]
+build_docs = "sphinx-build -M html docs docs/_build"
+push_docs = "bash docs/scripts/update_docs_by_hand.sh"
+
+[tool.pixi.feature.docs.target.win-64.tasks]
+push_docs = "powershell docs/scripts/update_docs_by_hand.ps1"
+
+[tool.pixi.feature.test.tasks]
+test = "pytest --junitxml=coverage/junit/test-results.xml --cov=msutils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html"
+lint = "ruff check"
+lint_fix = "ruff check --fix"
+lint_gh = "ruff check --output-format=github"
+lint_docs_gh = "ruff check --select D,D401 --ignore D417 --output-format=github"
+format = "ruff format"
+format_diff = "ruff format --diff"
+
+[tool.pixi.feature.docs.dependencies]
+sphinx = "*"
+pydata-sphinx-theme = "*"
+sphinxcontrib-mermaid = "*"
+nbsphinx = "*"
+
+[tool.pixi.feature.test.dependencies]
+pytest = ">=7.0.0,<8"
+pytest-cov = "*"
+ruff = "*"
+
 [tool.pixi.environments]
 build = {features = ["build"]}
+# docs = {features = ["docs"]}
+# test = {features = ["test"]}
+default = {features = [], solve-group = "default"}
+docs = {features = ["docs"], solve-group = "default"}
+test = {features = ["test"], solve-group = "default"}
+# all = {features = ["test", "docs"], solve-group = "default"}
+
+[tool.ruff.lint]
+select = [
+    # Aparently, standard:
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    # # pycodestyle
+    # "E",
+    # # Pyflakes
+    # "F",
+    # # pyupgrade
+    # "UP",
+    # # flake8-bugbear
+    # "B",
+    # # flake8-simplify
+    # "SIM",
+    # # isort
+    # "I",
+    # # Setting for docstrings, explicit in task lint_docs_gh
+    # # Pydocstyle
+    # "D",
+    # # Augment the convention by requiring an imperative mood for all docstrings.
+    # "D401",
+]
+
+ignore = [
+    # Relax the convention by _not_ requiring documentation for every function parameter.
+    "D417",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
