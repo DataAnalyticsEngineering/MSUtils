@@ -7,11 +7,14 @@ requires-python = ">= 3.12.7"
 dependencies = []
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools]
-package-dir = {"" = "MSUtils"}
+[tool.hatch.build.targets.sdist]
+include = ["MSUtils"]
+
+[tool.hatch.build.targets.wheel]
+include = ["MSUtils"]
 
 [tool.pixi.project]
 channels = ["conda-forge"]
@@ -30,18 +33,15 @@ h5py = ">=3.11.0,<4"
 scipy = ">=1.14.0,<2"
 matplotlib = ">=3.9.1,<4"
 scikit-image = ">=0.24.0,<0.25"
-vtk = ">=9.3.1,<10"
+# vtk = ">=9.3.1,<10"
 plotly = ">=5.23.0,<6"
 lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
-pytest = ">=8.3.3,<9"
-coverage = ">=7.6.1,<8"
-pre-commit = ">=4.0.0,<5"
-black = ">=24.8.0,<25"
+pytest = ">=7.0.0,<8"
 
 [tool.pixi.feature.build.dependencies]
-setuptools = "*"
+# setuptools = "*"
 twine = "*"
 
 [tool.pixi.feature.build.pypi-dependencies]
