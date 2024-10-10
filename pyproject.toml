@@ -89,17 +89,17 @@ select = [
     "E9",
     "F",
     # # pycodestyle
-    # "E",
+    "E",
     # # Pyflakes
-    # "F",
+    "F",
     # # pyupgrade
     # "UP",
     # # flake8-bugbear
-    # "B",
+    "B",
     # # flake8-simplify
-    # "SIM",
+    "SIM",
     # # isort
-    # "I",
+    "I",
     # # Setting for docstrings, explicit in task lint_docs_gh
     # # Pydocstyle
     # "D",
@@ -110,6 +110,8 @@ select = [
 ignore = [
     # Relax the convention by _not_ requiring documentation for every function parameter.
     "D417",
+    # Ignore Line to long stuff
+    "E501",
 ]
 
 [tool.ruff.lint.pydocstyle]

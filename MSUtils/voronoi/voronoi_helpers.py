@@ -1,9 +1,23 @@
 import numpy as np
+import numpy.typing as npt
+from scipy.ndimage import binary_erosion
 from sympy.ntheory import factorint
 
 
-def periodic_difference(pt1, pt2, RVE_length):
-    """Compute the periodic difference vector and its norm between two points."""
+def periodic_difference(
+    pt1: npt.ArrayLike, pt2: npt.ArrayLike, RVE_length: float
+) -> tuple[npt.ArrayLike, float]:
+    """
+    Compute the periodic difference vector and its norm between two points.
+
+    Args:
+        pt1 (npt.ArrayLike): Vector 1.
+        pt2 (npt.ArrayLike): Vector 2.
+        RVE_length (float): Length of unit cell.
+
+    Returns:
+        tuple[npt.ArrayLike, float]: Tuple of periodic difference vector and norm of it.
+    """
     diff = pt2 - pt1
     diff = np.where(diff > 0.5 * RVE_length, diff - RVE_length, diff)
     diff = np.where(diff < -0.5 * RVE_length, diff + RVE_length, diff)
@@ -11,8 +25,20 @@ def periodic_difference(pt1, pt2, RVE_length):
     return diff, norm_diff
 
 
-def periodic_dist_matrix(A, B, RVE_length):
-    """Compute periodic distance matrix between points in A and B."""
+def periodic_dist_matrix(
+    A: npt.ArrayLike, B: npt.ArrayLike, RVE_length: float
+) -> float:
+    """
+    Compute periodic distance matrix between points in A and B.
+
+    Args:
+        A (npt.ArrayLike): Point 1.
+        B (npt.ArrayLike): Point 2.
+        RVE_length (float): Length of unit cell.
+
+    Returns:
+        float: Squared distances.
+    """
     # Expand dimensions
     A = A[:, np.newaxis, :]
     B = B[np.newaxis, :, :]
@@ -27,11 +53,19 @@ def periodic_dist_matrix(A, B, RVE_length):
     return dist_sq
 
 
-from scipy.ndimage import binary_erosion
+def periodic_erosion(
+    mask: npt.ArrayLike[bool], shrink_factor: float
+) -> npt.ArrayLike[bool]:
+    """
+    Applies erosion on a binary mask while considering periodic boundaries.
 
+    Args:
+        mask (npt.ArrayLike[bool]): Boolean array.
+        shrink_factor (float): Factor to shrink it.
 
-def periodic_erosion(mask, shrink_factor):
-    """Applies erosion on a binary mask while considering periodic boundaries."""
+    Returns:
+        npt.ArrayLike[bool]: Shrunken boolean array.
+    """
     selem = np.ones((shrink_factor, shrink_factor, shrink_factor))
     padded_mask = np.pad(
         mask,
@@ -51,18 +85,20 @@ def periodic_erosion(mask, shrink_factor):
     ]
 
 
-def calculate_polygon_area_3d(vertices, normal):
+def calculate_polygon_area_3d(
+    vertices: list[npt.ArrayLike], normal: npt.ArrayLike
+) -> float:
     """
     Calculate the area of a polygon in 3D.
 
-    Parameters:
-    - vertices: List of 3D coordinates representing the vertices of the polygon.
-    - normal: 3D vector representing the normal of the polygon.
+    This function calculates the area of a polygon in 3D by projecting the vertices onto a plane spanned by two orthogonal vectors and then using the Shoelace formula to calculate the area in 2D.
+
+    Args:
+        vertices (list[npt.ArrayLike]): List of 3D coordinates representing the vertices of the polygon.
+        normal (npt.ArrayLike): 3D vector representing the normal of the polygon.
 
     Returns:
-    - area: The area of the polygon.
-
-    This function calculates the area of a polygon in 3D by projecting the vertices onto a plane spanned by two orthogonal vectors and then using the Shoelace formula to calculate the area in 2D.
+        float: The area of the polygon.
     """
     # Ensure normal is a unit vector
     normal = normal / np.linalg.norm(normal)
@@ -94,14 +130,22 @@ def calculate_polygon_area_3d(vertices, normal):
     return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
 
-def factorize(n, dim):
+def factorize(n: int, dim: int) -> list[int]:
     """
+    Factorize `n` into prime factors and then group them into `dim`
+
     Use sympy's factorint to factorize `n` into prime factors and then group them into `dim` factors
     that are as close as possible.
 
-    :param n: The number to factorize.
-    :param dim: The number of factors to group into (e.g., 3 for 3D).
-    :return: A list of `dim` factors whose product equals `n`.
+    Args:
+        n (int): The number to factorize.
+        dim (int): The number of factors to group into (e.g., 3 for 3D).
+
+    Raises:
+        ValueError: dim must be at least 1.
+
+    Returns:
+        list[int]: A list of `dim` factors whose product equals `n`.
     """
     if dim < 1:
         raise ValueError("dim must be at least 1.")
