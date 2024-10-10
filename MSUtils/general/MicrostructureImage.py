@@ -73,9 +73,14 @@ class MicrostructureImage:
         with h5py.File(self.h5_filename, "a") as f:
             if self.dset_name in f:
                 del f[self.dset_name]
-                print(f"Dataset {self.dset_name} exists in {self.h5_filename}, overwriting it.")
+                print(
+                    f"Dataset {self.dset_name} exists in {self.h5_filename}, overwriting it."
+                )
             dset = f.create_dataset(
-                self.dset_name, data=permuted_image, compression="gzip", compression_opts=9
+                self.dset_name,
+                data=permuted_image,
+                compression="gzip",
+                compression_opts=9,
             )
 
             if self.metadata:
@@ -88,6 +93,9 @@ class MicrostructureImage:
 
     def compute_volume_fractions(self):
         unique_labels = np.unique(self.image)
-        volumes = {label: np.sum(self.image == label) / self.image.size for label in unique_labels}
+        volumes = {
+            label: np.sum(self.image == label) / self.image.size
+            for label in unique_labels
+        }
 
         self.volume_fractions = volumes

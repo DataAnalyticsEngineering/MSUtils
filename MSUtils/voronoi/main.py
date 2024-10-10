@@ -27,7 +27,9 @@ def main():
     voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, shrink_factor=2)
     voroErodedImg.write("/dset_0", "data/voroImg_eroded.h5", order="zyx")
     write_xdmf(
-        "data/voroImg_eroded.h5", "data/voroImg_eroded.xdmf", microstructure_length=[1, 1, 1]
+        "data/voroImg_eroded.h5",
+        "data/voroImg_eroded.xdmf",
+        microstructure_length=[1, 1, 1],
     )
 
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)

@@ -24,14 +24,17 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
     for point in points:
         voxel_point = physical_to_voxel(point, L, microstructure.shape)
         x, y, z = voxel_point
-        x_min, x_max = max(0, int(x - voxel_radius[0])), min(
-            microstructure.shape[0], int(x + voxel_radius[0] + 1)
+        x_min, x_max = (
+            max(0, int(x - voxel_radius[0])),
+            min(microstructure.shape[0], int(x + voxel_radius[0] + 1)),
         )
-        y_min, y_max = max(0, int(y - voxel_radius[1])), min(
-            microstructure.shape[1], int(y + voxel_radius[1] + 1)
+        y_min, y_max = (
+            max(0, int(y - voxel_radius[1])),
+            min(microstructure.shape[1], int(y + voxel_radius[1] + 1)),
         )
-        z_min, z_max = max(0, int(z - voxel_radius[2])), min(
-            microstructure.shape[2], int(z + voxel_radius[2] + 1)
+        z_min, z_max = (
+            max(0, int(z - voxel_radius[2])),
+            min(microstructure.shape[2], int(z + voxel_radius[2] + 1)),
         )
 
         if strut_type == "circle":
@@ -46,7 +49,9 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
 
-def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"):
+def create_lattice_image(
+    Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"
+):
     """
     Create a lattice microstructure image.
 
@@ -103,12 +108,19 @@ if __name__ == "__main__":
         tmp_metadata = metadata.copy()
         tmp_metadata["lattice type"] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
-        microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
+        microstructures[name].write(
+            h5_filename="data/lattice_microstructures.h5", dset_name=name
+        )
 
     from MSUtils.general.h52xdmf import write_xdmf
 
     write_xdmf(
-        "data/lattice_microstructures.h5", "data/lattice_microstructures.xdmf", L, False, None, True
+        "data/lattice_microstructures.h5",
+        "data/lattice_microstructures.xdmf",
+        L,
+        False,
+        None,
+        True,
     )
 
     # vertices, edges = octet_truss_lattice()

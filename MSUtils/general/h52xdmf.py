@@ -52,7 +52,9 @@ def write_xdmf(
         elif dimensions == 4:
             Nx, Ny, Nz, Nt = dset.shape
             if Nt not in [1, 3, 6, 9]:
-                print_verbose(f"Omitting dataset {dset.name} due to unsupported dimension: {Nt}")
+                print_verbose(
+                    f"Omitting dataset {dset.name} due to unsupported dimension: {Nt}"
+                )
                 return
         else:
             print_verbose(
@@ -71,7 +73,9 @@ def write_xdmf(
             # Remove the time_keyword{time_step}/ part from the attribute name
             attr_name_parts = dset.name.split("/")
             time_index = [
-                i for i, part in enumerate(attr_name_parts) if part.startswith(time_keyword)
+                i
+                for i, part in enumerate(attr_name_parts)
+                if part.startswith(time_keyword)
             ]
             if time_index:
                 time_index = time_index[0]
@@ -134,7 +138,9 @@ def write_xdmf(
 
         for subgroup in group.values():
             if isinstance(subgroup, h5py.Group):
-                if time_series and re.search(rf"{time_keyword}\d*\.?\d+", subgroup.name):
+                if time_series and re.search(
+                    rf"{time_keyword}\d*\.?\d+", subgroup.name
+                ):
                     time_step = float(
                         re.search(rf"{time_keyword}(\d*\.?\d+)", subgroup.name).group(1)
                     )
@@ -179,7 +185,9 @@ def write_xdmf(
                 else:
                     grid = temporal_grids[grid_size]
 
-                subgrid = ET.SubElement(grid, "Grid", Name=grid_name, GridType="Uniform")
+                subgrid = ET.SubElement(
+                    grid, "Grid", Name=grid_name, GridType="Uniform"
+                )
                 ET.SubElement(subgrid, "Time", Type="Single", Value=str(time))
             else:
                 grid = ET.SubElement(domain, "Grid", Name=grid_name, GridType="Uniform")
@@ -240,7 +248,9 @@ if __name__ == "__main__":
         default=None,
         help="Path to the output XDMF file. Optional. If not provided, the HDF5 filename with .xdmf extension is used.",
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output.")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output."
+    )
     parser.add_argument(
         "-c",
         "--microstructure_length",

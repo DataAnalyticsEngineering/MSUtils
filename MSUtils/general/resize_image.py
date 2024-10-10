@@ -23,7 +23,9 @@ def resize_image(data_array, scale=None, target_resolution=None):
     if scale is not None:
         new_shape = np.multiply(data_array.shape, scale)
     elif target_resolution is not None:
-        scale = np.ceil(np.array(target_resolution) / np.array(data_array.shape)).astype(int)
+        scale = np.ceil(
+            np.array(target_resolution) / np.array(data_array.shape)
+        ).astype(int)
         new_shape = target_resolution
     else:
         scale = [2, 2, 2]
@@ -41,7 +43,9 @@ def resize_image(data_array, scale=None, target_resolution=None):
                 resized_image, footprint=footprint, mode="wrap"
             )
         else:
-            kernel_size = [2 * s for s in scale]  # Default kernel size is twice the scale factor
+            kernel_size = [
+                2 * s for s in scale
+            ]  # Default kernel size is twice the scale factor
             resized_image = scipy.ndimage.median_filter(
                 resized_image, size=kernel_size, mode="wrap"
             )

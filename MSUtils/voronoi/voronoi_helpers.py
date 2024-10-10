@@ -83,7 +83,10 @@ def calculate_polygon_area_3d(vertices, normal):
 
     # Project vertices onto the plane spanned by u and v
     vertices_2d = np.array(
-        [[np.dot(vertex - vertices[0], u), np.dot(vertex - vertices[0], v)] for vertex in vertices]
+        [
+            [np.dot(vertex - vertices[0], u), np.dot(vertex - vertices[0], v)]
+            for vertex in vertices
+        ]
     )
 
     # Use the Shoelace formula to calculate the area of the polygon in 2D
@@ -111,7 +114,8 @@ def factorize(n, dim):
 
     # Sort the factors in descending order to distribute larger primes first
     primes = sorted(
-        (prime for prime, exp in prime_factors.items() for _ in range(exp)), reverse=True
+        (prime for prime, exp in prime_factors.items() for _ in range(exp)),
+        reverse=True,
     )
 
     # Distribute the primes among the factors to minimize the difference between factors
