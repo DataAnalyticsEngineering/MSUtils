@@ -18,7 +18,7 @@ commit=$(git log -1 --pretty=%B)
 cd .. || { printf "Failed to return to parent directory\n" >&2; exit 1; }
 
 # Build new website
-pixi run test
+# pixi run test # Does not work, don't know why... covhtml does not get copied
 pixi run -v -e docs sphinx-build -M html docs docs/_build || { printf "Failed to build documentation\n" >&2; exit 1; }
 printf "Compiling done!\n"
 

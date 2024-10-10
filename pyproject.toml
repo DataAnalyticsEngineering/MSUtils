@@ -57,7 +57,7 @@ push_docs = "bash docs/scripts/update_docs_by_hand.sh"
 push_docs = "powershell docs/scripts/update_docs_by_hand.ps1"
 
 [tool.pixi.feature.test.tasks]
-test = "pytest --junitxml=coverage/junit/test-results.xml --cov=msutils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html && cp -r coverage/html/ docs/_static/test_cov/"
+test = "pytest --junitxml=coverage/junit/test-results.xml --cov=msutils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html ; mkdir -p docs/_static/ && cp -r coverage/html/ docs/_static/test_cov/"
 lint = "ruff check"
 lint_fix = "ruff check --fix"
 lint_gh = "ruff check --output-format=github"

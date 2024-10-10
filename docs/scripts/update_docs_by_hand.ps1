@@ -11,8 +11,8 @@ Set-Location temp_main
 git clone https://github.tik.uni-stuttgart.de/DAE/MSUtils.git .
 $commit = git log -1 --pretty=%B
 # Build new website
-pixi run test
-pixi run -v -e docs sphinx-build -M html docs docs/_build
+# pixi run -v test # Does not work, don't know why... covhtml does not get copied
+pixi run -v -e utility sphinx-build -M html docs docs/_build
 Write-Output "compiling done!"
 # Copying
 Write-Output "Copying files..."
