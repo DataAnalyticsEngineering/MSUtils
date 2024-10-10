@@ -1,4 +1,3 @@
-import numpy as np
 import vtk as vtk
 
 from MSUtils.general.h52xdmf import write_xdmf
@@ -14,7 +13,7 @@ def main():
     L = [1, 1, 1]
 
     SeedInfo = VoronoiSeeds(num_crystals, L, "rubiks-cube", BitGeneratorSeed=42)
-    SeedInfo.write("/seeds", "data/voroImg.h5")
+    SeedInfo.write_h5("data/voroImg.h5", "/seeds")
 
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")

@@ -124,17 +124,16 @@ class PeriodicVoronoiTessellation:
         for simplex in tri.simplices:
             for i in simplex:
                 for j in simplex:
-                    if i != j:
-                        if i < len(
-                            seeds
-                        ):  # Ensure we're looking only at original seeds, not replicas
-                            if i not in neighbors:
-                                neighbors[i] = set()
-                            # Map replicas back to their original counterparts
-                            # neighbors[i].add(j % len(seeds))
-                            mapped_j = j % len(seeds)
-                            if i != mapped_j:
-                                neighbors[i].add(mapped_j)
+                    if i != j and i < len(
+                        seeds
+                    ):  # Ensure we're looking only at original seeds, not replicas
+                        if i not in neighbors:
+                            neighbors[i] = set()
+                        # Map replicas back to their original counterparts
+                        # neighbors[i].add(j % len(seeds))
+                        mapped_j = j % len(seeds)
+                        if i != mapped_j:
+                            neighbors[i].add(mapped_j)
 
         # Convert sets to lists
         for key in neighbors:
@@ -147,7 +146,9 @@ class PeriodicVoronoiTessellation:
         Ltensor = np.zeros((self.ndim, self.ndim))
         LLtensor = np.zeros((self.ndim, self.ndim, self.ndim, self.ndim))
 
-        for ridge, ridge_pts in zip(self.orig_ridges, self.orig_ridge_pts):
+        for ridge, ridge_pts in zip(
+            self.orig_ridges, self.orig_ridge_pts, strict=False
+        ):
             if -1 in ridge:  # Skip ridges at infinity
                 continue
 
@@ -251,7 +252,7 @@ class PeriodicVoronoiTessellation:
                 lofe_ids = [[] for _ in range(len(regions))]
 
                 # Iterate through each ridge and the corresponding ridge points
-                for ridge, pts in zip(ridges, ridge_points):
+                for ridge, pts in zip(ridges, ridge_points, strict=False):
                     # Add the ridge to the corresponding cells' face list
                     for pt in pts:
                         if pt in crystals:

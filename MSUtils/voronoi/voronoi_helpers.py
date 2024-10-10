@@ -53,9 +53,7 @@ def periodic_dist_matrix(
     return dist_sq
 
 
-def periodic_erosion(
-    mask: npt.ArrayLike[bool], shrink_factor: float
-) -> npt.ArrayLike[bool]:
+def periodic_erosion(mask: npt.ArrayLike, shrink_factor: float) -> npt.ArrayLike:
     """
     Applies erosion on a binary mask while considering periodic boundaries.
 

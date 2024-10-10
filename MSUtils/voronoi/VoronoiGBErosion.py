@@ -142,8 +142,12 @@ class PeriodicVoronoiImageErosion:
         self.polyinfo = []
         self.polytrack = defaultdict(list)
 
-        for i, (ridge, ridge_pts) in enumerate(
-            zip(voroTess.voronoi.ridge_vertices, voroTess.voronoi.ridge_points)
+        for _i, (ridge, ridge_pts) in enumerate(
+            zip(
+                voroTess.voronoi.ridge_vertices,
+                voroTess.voronoi.ridge_points,
+                strict=False,
+            )
         ):
             if -1 in ridge:
                 # Skip infinite ridges
@@ -183,6 +187,7 @@ class PeriodicVoronoiImageErosion:
                         self.elem_xyz_array,
                         self.materials_array,
                         self.normal_array,
+                        strict=False,
                     )
                 ),
                 dtype=voxel_info_dtype,
