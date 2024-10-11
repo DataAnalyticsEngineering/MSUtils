@@ -20,7 +20,7 @@ class VoronoiSeeds:
         grp_name: str = None,
     ) -> Self:
         """
-        _summary_
+        Class to handle Voronoi seed points.
 
         Generate seed points (crystals) for 3D Voronoi tessellations and their associated orthonormal lattice vectors.
 

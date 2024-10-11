@@ -1,4 +1,3 @@
-import pytest
 from MSUtils.voronoi.VoronoiSeeds import main
 
 
