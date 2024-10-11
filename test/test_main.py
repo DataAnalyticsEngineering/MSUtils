@@ -1,5 +1,5 @@
-import pytest
 import sys
+
 from MSUtils.voronoi.main import main
 
 
