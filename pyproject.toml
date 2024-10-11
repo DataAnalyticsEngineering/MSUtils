@@ -64,6 +64,7 @@ lint_gh = "ruff check --output-format=github"
 lint_docs_gh = "ruff check --select D,D401 --ignore D417 --output-format=github"
 format = "ruff format"
 format_diff = "ruff format --diff"
+typecheck = "mypy MSUtils"
 
 [tool.pixi.feature.docs.dependencies]
 sphinx = "*"
@@ -75,6 +76,7 @@ nbsphinx = "*"
 pytest = ">=7.0.0,<8"
 pytest-cov = "*"
 ruff = "*"
+mypy = ">=1.11.2,<2"
 
 [tool.pixi.environments]
 build = {features = ["build"]}
@@ -114,3 +116,10 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+exclude = []
+ignore_missing_imports = true
