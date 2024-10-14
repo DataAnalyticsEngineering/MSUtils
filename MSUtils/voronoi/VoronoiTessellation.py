@@ -29,9 +29,7 @@ class PeriodicVoronoiTessellation:
 
         # Renumber vertices for continuity
         unique_vertex_indices = sorted(
-            set(
-                index for region in self.orig_regions for index in region if index != -1
-            )
+            set(index for region in self.orig_regions for index in region if index != -1)
         )
         self.vertex_index_map = {
             old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertex_indices)
@@ -97,9 +95,7 @@ class PeriodicVoronoiTessellation:
             if all(v in self.orig_verts for v in v)
         ]
         self.orig_ridges = [self.voronoi.ridge_vertices[i] for i in orig_ridge_idx]
-        self.orig_ridge_pts = np.array(
-            [self.voronoi.ridge_points[i] for i in orig_ridge_idx]
-        )
+        self.orig_ridge_pts = np.array([self.voronoi.ridge_points[i] for i in orig_ridge_idx])
         self.orig_ridge_indices = np.array(orig_ridge_idx)
 
     def _find_neighbors(self) -> tuple[dict[int, int], npt.ArrayLike]:
@@ -179,9 +175,7 @@ class PeriodicVoronoiTessellation:
         Ltensor = np.zeros((self.ndim, self.ndim))
         LLtensor = np.zeros((self.ndim, self.ndim, self.ndim, self.ndim))
 
-        for ridge, ridge_pts in zip(
-            self.orig_ridges, self.orig_ridge_pts, strict=False
-        ):
+        for ridge, ridge_pts in zip(self.orig_ridges, self.orig_ridge_pts, strict=False):
             if -1 in ridge:  # Skip ridges at infinity
                 continue
 
@@ -189,9 +183,7 @@ class PeriodicVoronoiTessellation:
             #     continue
 
             vertices = [self.voronoi.vertices[i] for i in ridge]
-            ridge_N = (
-                self.voronoi.points[ridge_pts[0]] - self.voronoi.points[ridge_pts[1]]
-            )
+            ridge_N = self.voronoi.points[ridge_pts[0]] - self.voronoi.points[ridge_pts[1]]
             ridge_N /= np.linalg.norm(ridge_N)
 
             if self.ndim == 2:  # 2D case
@@ -202,15 +194,11 @@ class PeriodicVoronoiTessellation:
 
             total_area += ridge_area
             Ltensor += ridge_area * np.einsum("i,j->ij", ridge_N, ridge_N)
-            LLtensor += ridge_area * np.einsum(
-                "i,j,k,l->ijkl", ridge_N, ridge_N, ridge_N, ridge_N
-            )
+            LLtensor += ridge_area * np.einsum("i,j,k,l->ijkl", ridge_N, ridge_N, ridge_N, ridge_N)
 
         crystal_volumes = np.zeros(len(self.orig_regions))
         for i, region in enumerate(self.orig_regions):
-            crystal_volumes[i] = ConvexHull(
-                [self.voronoi.vertices[j] for j in region]
-            ).volume
+            crystal_volumes[i] = ConvexHull([self.voronoi.vertices[j] for j in region]).volume
 
         self.crystal_volumes = crystal_volumes
         self.interface_area = total_area
@@ -239,9 +227,7 @@ class PeriodicVoronoiTessellation:
             old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertex_indices)
         }
 
-        crystal_index_map = {
-            crystal_idx: new_idx for new_idx, crystal_idx in enumerate(crystals)
-        }
+        crystal_index_map = {crystal_idx: new_idx for new_idx, crystal_idx in enumerate(crystals)}
         with open(filepath, "w") as file:
             # Write VTU header
             file.write(
@@ -254,9 +240,7 @@ class PeriodicVoronoiTessellation:
 
             # Write points (vertices)
             file.write("<Points>\n")
-            file.write(
-                '<DataArray type="Float32" NumberOfComponents="3" format="ascii">\n'
-            )
+            file.write('<DataArray type="Float32" NumberOfComponents="3" format="ascii">\n')
             for idx in unique_vertex_indices:
                 v = vertices[idx]
                 file.write(f"{v[0]} {v[1]} {v[2] if dim == 3 else 0}\n")
@@ -281,9 +265,7 @@ class PeriodicVoronoiTessellation:
             # Types
             file.write('<DataArray type="UInt8" Name="types" format="ascii">\n')
             for _ in regions:
-                file.write(
-                    "42\n" if dim == 3 else "7\n"
-                )  # 42 for polyhedron, 7 for polygon
+                file.write("42\n" if dim == 3 else "7\n")  # 42 for polyhedron, 7 for polygon
             file.write("</DataArray>\n")
 
             # For 3D, write faces and face offsets
@@ -310,9 +292,7 @@ class PeriodicVoronoiTessellation:
                 file.write("</DataArray>\n")
 
                 # Write face offsets
-                file.write(
-                    '<DataArray type="Int32" Name="faceoffsets" format="ascii">\n'
-                )
+                file.write('<DataArray type="Int32" Name="faceoffsets" format="ascii">\n')
                 cumulative_offset = 0
                 for cell_faces in lofe_ids:
                     for face in cell_faces:

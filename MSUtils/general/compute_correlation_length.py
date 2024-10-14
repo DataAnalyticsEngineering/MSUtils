@@ -37,9 +37,7 @@ def compute_correlation_length(img):
     # Fit exponential decay to autocorrelation function slices
     for i_dim in range(img.ndim):
         slice_midpoint = slice(None, img.shape[i_dim] // 2)
-        slice_others = [
-            0 if dim != i_dim else slice_midpoint for dim in range(img.ndim)
-        ]
+        slice_others = [0 if dim != i_dim else slice_midpoint for dim in range(img.ndim)]
         y = autocorr[tuple(slice_others)].ravel()
         x = np.arange(y.size)
         params, _ = curve_fit(exponential_decay, x, y, p0=[10], bounds=(0, np.inf))
@@ -72,7 +70,7 @@ def plot_mid_planes(autocorr):
         ]
         titles = ["XY Mid-Plane", "YZ Mid-Plane", "XZ Mid-Plane"]
 
-        for ax, plane, title in zip(axes, planes, titles):
+        for ax, plane, title in zip(axes, planes, titles, strict=False):
             im = ax.imshow(plane, cmap="viridis")
             ax.set_title(title, fontsize=14)
             ax.axis("off")
@@ -88,9 +86,7 @@ def plot_mid_planes(autocorr):
         plt.axis("off")
         plt.colorbar(orientation="horizontal")
 
-    plt.subplots_adjust(
-        left=0.05, right=0.95, top=0.9, bottom=0.2, wspace=0.3, hspace=0.3
-    )
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.2, wspace=0.3, hspace=0.3)
     plt.savefig("data/mid_planes.png", bbox_inches="tight")
     plt.show()
 
@@ -129,7 +125,7 @@ def visualize_correlation(cl, autocorr):
     markers = ["o", "s", "^", "d"][: len(directions)]
 
     for i_dim, direction, color, marker in zip(
-        range(len(directions)), directions, colors, markers
+        range(len(directions)), directions, colors, markers, strict=False
     ):
         line_full = autocorr_centered[indices[i_dim]].ravel()
         mid_point = len(line_full) // 2  # Find the center

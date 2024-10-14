@@ -1,11 +1,5 @@
-import sys
-
-from MSUtils.voronoi.main import main
+from MSUtils.voronoi.main import main as voronoi_main
 
 
-def test_path():
-    [print(i) for i in sys.path]
-
-
-def test_1():
-    main()
+def test_voronoi_main():
+    voronoi_main()

@@ -1,5 +1,3 @@
-import vtk as vtk
-
 from MSUtils.general.h52xdmf import write_xdmf
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.voronoi.VoronoiGBErosion import PeriodicVoronoiImageErosion
@@ -13,7 +11,6 @@ def main():
     L = [1, 1, 1]
 
     SeedInfo = VoronoiSeeds(num_crystals, L, "rubiks-cube", BitGeneratorSeed=42)
-    SeedInfo.write_h5("data/voroImg.h5", "/seeds")
 
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")

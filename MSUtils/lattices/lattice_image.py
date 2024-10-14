@@ -49,9 +49,7 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
 
-def create_lattice_image(
-    Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"
-):
+def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"):
     """
     Create a lattice microstructure image.
 
@@ -108,9 +106,7 @@ if __name__ == "__main__":
         tmp_metadata = metadata.copy()
         tmp_metadata["lattice type"] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
-        microstructures[name].write(
-            h5_filename="data/lattice_microstructures.h5", dset_name=name
-        )
+        microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
 
     from MSUtils.general.h52xdmf import write_xdmf
 

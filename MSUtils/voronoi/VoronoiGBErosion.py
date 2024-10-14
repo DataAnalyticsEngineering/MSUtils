@@ -64,12 +64,8 @@ class PeriodicVoronoiImageErosion:
             crystal_mask = self.image == crystal
             eroded_mask = periodic_erosion(crystal_mask, self.shrink_factor)
             boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
-            boundary_mask_indices = np.array(
-                np.where(boundary_mask)
-            ).T  # Shape: (num_voxels, 3)
-            voxel_coords = (
-                boundary_mask_indices + 0.5
-            ) * voxel_scale  # Shape: (num_voxels, 3)
+            boundary_mask_indices = np.array(np.where(boundary_mask)).T  # Shape: (num_voxels, 3)
+            voxel_coords = (boundary_mask_indices + 0.5) * voxel_scale  # Shape: (num_voxels, 3)
 
             if boundary_mask_indices.size == 0:
                 continue  # Skip if no boundary voxels
@@ -103,9 +99,7 @@ class PeriodicVoronoiImageErosion:
                 if not np.any(inside):
                     continue  # Skip if no inside voxels
 
-                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[
-                    inside
-                ]
+                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
                 inside_indices = boundary_mask_indices[inside_indices_in_voxel_coords]
 
                 # Compute element indices
@@ -122,9 +116,7 @@ class PeriodicVoronoiImageErosion:
                 normal = diff / norm
 
                 # Map extended seed indices to original seed indices (crystal labels)
-                materials = [
-                    self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts
-                ]
+                materials = [self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts]
 
                 num_voxels = inside_indices.shape[0]
                 coords_list.append(inside_indices)
@@ -239,12 +231,8 @@ class PeriodicVoronoiImageErosion:
                 )  # Permute spatial dimensions
 
                 permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][
-                    :, ::-1
-                ]
-                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][
-                    :, ::-1
-                ]
+                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][:, ::-1]
+                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][:, ::-1]
 
                 permuted_normals_field = normals_field
                 permuted_normals_field = normals_field.transpose(

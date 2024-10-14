@@ -4,9 +4,7 @@ from numpy.fft import fftn, ifftn, irfftn, rfftn
 
 
 class VoxelInfo:
-    def __init__(
-        self, coords, elem_xyz, materials, fractions, fine_scale_block, normal=None
-    ):
+    def __init__(self, coords, elem_xyz, materials, fractions, fine_scale_block, normal=None):
         self.coords = coords
         self.elem_xyz = elem_xyz
         self.materials = materials
@@ -16,9 +14,7 @@ class VoxelInfo:
 
 
 class ComBoMicrostructureImage:
-    def __init__(
-        self, coarse_image=None, fine_image=None, voxel_info_list=None, iface=None
-    ):
+    def __init__(self, coarse_image=None, fine_image=None, voxel_info_list=None, iface=None):
         self.coarse_image = coarse_image
         self.fine_image = fine_image
         self.voxel_info_list = voxel_info_list if voxel_info_list is not None else []
@@ -37,21 +33,19 @@ class ComBoMicrostructureImage:
         if self.voxel_info_list is not None:
             unique_labels = np.unique(data_array[data_array >= 0])
             volumes = {
-                label: np.sum(data_array == label) / data_array.size
-                for label in unique_labels
+                label: np.sum(data_array == label) / data_array.size for label in unique_labels
             }
 
             for voxel_info in self.voxel_info_list:
                 for material, fraction in zip(
-                    voxel_info.materials, voxel_info.fractions
+                    voxel_info.materials, voxel_info.fractions, strict=False
                 ):
                     if material in volumes:
                         volumes[material] += fraction / data_array.size
         else:
             unique_labels = np.unique(data_array)
             volumes = {
-                label: np.sum(data_array == label) / data_array.size
-                for label in unique_labels
+                label: np.sum(data_array == label) / data_array.size for label in unique_labels
             }
 
         return volumes
@@ -90,9 +84,7 @@ class ComBoMicrostructureImage:
         """
         inline_norm = lambda x: np.sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2])
 
-        assert (
-            img.ndim == 3
-        ), "error: expecting 3D ndarray (0--> phase 0; else-->phase 1)"
+        assert img.ndim == 3, "error: expecting 3D ndarray (0--> phase 0; else-->phase 1)"
         N = np.array(img.shape)
         l_combi = l * np.array(img.shape)
         w = np.abs(lap_img)
@@ -186,18 +178,14 @@ class ComBoMicrostructureImage:
 
                         if np.array_equal(np.unique(block), np.unique(block_pad)):
                             iface_block = iface[xb:xe, yb:ye, zb:ze]
-                            supervoxel = np.where(
-                                block_pad == significant_materials[0], 0, 1
-                            )
+                            supervoxel = np.where(block_pad == significant_materials[0], 0, 1)
                         else:
                             iface_block = iface[
                                 (i * dx) % nx : ((i + 1) * dx) % nx,
                                 (j * dy) % ny : ((j + 1) * dy) % ny,
                                 (k * dz) % nz : ((k + 1) * dz) % nz,
                             ]
-                            supervoxel = np.where(
-                                block == significant_materials[0], 0, 1
-                            )
+                            supervoxel = np.where(block == significant_materials[0], 0, 1)
 
                         normal = self.supervoxel_normal(
                             supervoxel,
@@ -271,9 +259,7 @@ class ComBoMicrostructureImage:
                     for voxel_info in self.voxel_info_list:
                         i, j, k = voxel_info.coords
                         normal_val = (
-                            voxel_info.normal
-                            if voxel_info.normal is not None
-                            else (0.0, 0.0, 0.0)
+                            voxel_info.normal if voxel_info.normal is not None else (0.0, 0.0, 0.0)
                         )
                         coarse_normal[i, j, k] = normal_val
                     grp.create_dataset(
@@ -318,9 +304,7 @@ class ComBoMicrostructureImage:
                     )
                     num_materials = len(voxel_info.materials)
                     normal_val = (
-                        voxel_info.normal
-                        if voxel_info.normal is not None
-                        else (0.0, 0.0, 0.0)
+                        voxel_info.normal if voxel_info.normal is not None else (0.0, 0.0, 0.0)
                     )
 
                     structured_array[idx] = (
@@ -374,9 +358,7 @@ class ComBoMicrostructureImage:
                     )
                     voxel_info_list.append(voxel_info)
 
-            return ComBoMicrostructureImage(
-                coarse_image, fine_image, voxel_info_list, iface
-            )
+            return ComBoMicrostructureImage(coarse_image, fine_image, voxel_info_list, iface)
 
 
 def main():
@@ -387,12 +369,8 @@ def main():
     from MicrostructureImage import MicrostructureImage
     from resize_image import resize_image
 
-    ms = MicrostructureImage(
-        h5_filename="data/sphere.h5", dset_name="/sphere/256x256x256/ms"
-    )
-    ms = MicrostructureImage(
-        image=resize_image(ms.image, target_resolution=[256, 256, 256])
-    )
+    ms = MicrostructureImage(h5_filename="data/sphere.h5", dset_name="/sphere/256x256x256/ms")
+    ms = MicrostructureImage(image=resize_image(ms.image, target_resolution=[256, 256, 256]))
 
     combo_micro_img = ComBoMicrostructureImage()
     combo_micro_img.downscale(ms.image, 64, 64, 64, pad_window=[2, 2, 2])
