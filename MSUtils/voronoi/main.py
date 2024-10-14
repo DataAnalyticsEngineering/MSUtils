@@ -7,15 +7,15 @@ from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 
 
 def main():
-    num_crystals = 8
+    num_crystals = 27
     L = [1, 1, 1]
 
-    SeedInfo = VoronoiSeeds(num_crystals, L, "rubiks-cube", BitGeneratorSeed=42)
+    SeedInfo = VoronoiSeeds(num_crystals, L, "sobol", BitGeneratorSeed=42)
 
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")
 
-    Nx, Ny, Nz = 64, 64, 64
+    Nx, Ny, Nz = 128, 128, 128
     voroImg = PeriodicVoronoiImage([Nx, Ny, Nz], SeedInfo.seeds, L)
     voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="zyx")
     write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1, 1, 1])
@@ -29,7 +29,8 @@ def main():
     )
 
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)
-    print(msimage.volume_fractions)
+    phase_volume_fraction = msimage.volume_fractions.get(-1, 0) * 100
+    print(f"Volume fraction of grain boundary (phase: -1): {phase_volume_fraction:.4f}%")
 
 
 if __name__ == "__main__":

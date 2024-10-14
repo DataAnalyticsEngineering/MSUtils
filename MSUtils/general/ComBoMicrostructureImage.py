@@ -362,19 +362,19 @@ class ComBoMicrostructureImage:
 
 
 def main():
-    import os
-    import sys
 
-    sys.path.append(os.path.join("general/"))
-    from MicrostructureImage import MicrostructureImage
-    from resize_image import resize_image
+    from MSUtils.general.MicrostructureImage import MicrostructureImage
+    from MSUtils.general.resize_image import resize_image
+    from MSUtils.general.h52xdmf import write_xdmf
 
-    ms = MicrostructureImage(h5_filename="data/sphere.h5", dset_name="/sphere/256x256x256/ms")
+    ms = MicrostructureImage(h5_filename="data/fibers1.h5", dset_name="/img")
     ms = MicrostructureImage(image=resize_image(ms.image, target_resolution=[256, 256, 256]))
 
     combo_micro_img = ComBoMicrostructureImage()
     combo_micro_img.downscale(ms.image, 64, 64, 64, pad_window=[2, 2, 2])
     combo_micro_img.write("data/test_combo.h5", "/combo_group")
+    
+    write_xdmf(h5_filepath="data/test_combo.h5", xdmf_filepath="data/test_combo.xdmf", microstructure_length=[1, 1, 1], verbose=True)
 
 
 if __name__ == "__main__":

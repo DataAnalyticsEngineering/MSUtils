@@ -1,7 +1,7 @@
 import numpy as np
-from lattice_definitions import *
-
+from MSUtils.lattices.lattice_definitions import BCC_lattice, BCCz_lattice, cubic_lattice, FCC_lattice, FBCC_lattice, isotruss_lattice, octet_truss_lattice
 from MSUtils.general.MicrostructureImage import MicrostructureImage
+from MSUtils.general.h52xdmf import write_xdmf
 
 
 def physical_to_voxel(point, dimensions, shape):
@@ -108,15 +108,12 @@ if __name__ == "__main__":
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
         microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
 
-    from MSUtils.general.h52xdmf import write_xdmf
-
     write_xdmf(
-        "data/lattice_microstructures.h5",
-        "data/lattice_microstructures.xdmf",
-        L,
-        False,
-        None,
-        True,
+        h5_filepath="data/lattice_microstructures.h5",
+        xdmf_filepath="data/lattice_microstructures.xdmf",
+        microstructure_length=L,
+        time_series=False,
+        verbose=True,
     )
 
     # vertices, edges = octet_truss_lattice()

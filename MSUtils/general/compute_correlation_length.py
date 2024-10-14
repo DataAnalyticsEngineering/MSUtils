@@ -160,7 +160,7 @@ def visualize_correlation(cl, autocorr):
 
 
 def main():
-    from MicrostructureImage import MicrostructureImage
+    from MSUtils.general.MicrostructureImage import MicrostructureImage
 
     ms = MicrostructureImage(h5_filename="data/fibers1.h5", dset_name="/img")
     aspect_ratio, cl, autocorr = compute_correlation_length(ms.image)

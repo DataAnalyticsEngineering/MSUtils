@@ -66,11 +66,7 @@ def main():
 
     error = {}
     for key in ms.volume_fractions.keys():
-        error[key] = (
-            (ms.volume_fractions[key] - ms_resized.volume_fractions[key])
-            * 100
-            / ms.volume_fractions[key]
-        )
+        error[key] = (ms.volume_fractions[key] - ms_resized.volume_fractions[key])* 100/ ms.volume_fractions[key]
         print(f"Resizing volume fraction error for phase {key}: {error[key]:.6f}%")
 
 
