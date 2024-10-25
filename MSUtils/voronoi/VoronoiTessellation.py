@@ -1,11 +1,25 @@
+from pathlib import Path
+from typing import Self
+
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial import ConvexHull, Delaunay, Voronoi
 
 from MSUtils.voronoi.voronoi_helpers import calculate_polygon_area_3d
 
 
 class PeriodicVoronoiTessellation:
-    def __init__(self, RVE_size, seeds):
+    def __init__(self, RVE_size: list[float], seeds: npt.ArrayLike) -> Self:
+        """
+        Returns new PeriodicVoronoiTessellation class.
+
+        Args:
+            RVE_size (list[float]): Size of representative volume element.
+            seeds (npt.ArrayLike): Array of seeds.
+
+        Returns:
+            Self: Instantiated Object
+        """
         self.RVE_size = RVE_size
         self.ndim = len(RVE_size)
         self.seeds = seeds
@@ -15,15 +29,19 @@ class PeriodicVoronoiTessellation:
 
         # Renumber vertices for continuity
         unique_vertex_indices = sorted(
-            set(
-                index for region in self.orig_regions for index in region if index != -1
-            )
+            set(index for region in self.orig_regions for index in region if index != -1)
         )
         self.vertex_index_map = {
             old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertex_indices)
         }
 
-    def _extend_seeds(self):
+    def _extend_seeds(self) -> tuple[npt.ArrayLike, npt.ArrayLike]:
+        """
+        Return periodic extended seeds.
+
+        Returns:
+            tuple[npt.ArrayLike, npt.ArrayLike]: Tuple of seeds, first the extended, then the original.
+        """
         extended, orig_indices = [], []
         dim = len(self.RVE_size)  # Determine the dimension (2D or 3D)
 
@@ -56,7 +74,10 @@ class PeriodicVoronoiTessellation:
         self.crystal_index_map = crystal_index_map
         return np.array(extended), np.array(orig_indices)
 
-    def _generate_voronoi(self):
+    def _generate_voronoi(self) -> None:
+        """
+        Generate the internal voronoi tesselation.
+        """
         ext_seeds, orig_indices = self._extend_seeds()
         self.voronoi = Voronoi(ext_seeds)
 
@@ -74,12 +95,17 @@ class PeriodicVoronoiTessellation:
             if all(v in self.orig_verts for v in v)
         ]
         self.orig_ridges = [self.voronoi.ridge_vertices[i] for i in orig_ridge_idx]
-        self.orig_ridge_pts = np.array(
-            [self.voronoi.ridge_points[i] for i in orig_ridge_idx]
-        )
+        self.orig_ridge_pts = np.array([self.voronoi.ridge_points[i] for i in orig_ridge_idx])
         self.orig_ridge_indices = np.array(orig_ridge_idx)
 
-    def _find_neighbors(self):
+    def _find_neighbors(self) -> tuple[dict[int, int], npt.ArrayLike]:
+        """
+        Return dict of neighbors and delaunay triangulation
+
+        Returns:
+            tuple[dict[int, int], npt.ArrayLike]: Tuple
+        """
+        # TODO: this function does 2 things at once!
         # Create replicated points across the domain for periodic boundary conditions
         offsets = np.array(
             [
@@ -124,17 +150,16 @@ class PeriodicVoronoiTessellation:
         for simplex in tri.simplices:
             for i in simplex:
                 for j in simplex:
-                    if i != j:
-                        if i < len(
-                            seeds
-                        ):  # Ensure we're looking only at original seeds, not replicas
-                            if i not in neighbors:
-                                neighbors[i] = set()
-                            # Map replicas back to their original counterparts
-                            # neighbors[i].add(j % len(seeds))
-                            mapped_j = j % len(seeds)
-                            if i != mapped_j:
-                                neighbors[i].add(mapped_j)
+                    if i != j and i < len(
+                        seeds
+                    ):  # Ensure we're looking only at original seeds, not replicas
+                        if i not in neighbors:
+                            neighbors[i] = set()
+                        # Map replicas back to their original counterparts
+                        # neighbors[i].add(j % len(seeds))
+                        mapped_j = j % len(seeds)
+                        if i != mapped_j:
+                            neighbors[i].add(mapped_j)
 
         # Convert sets to lists
         for key in neighbors:
@@ -142,12 +167,15 @@ class PeriodicVoronoiTessellation:
 
         return neighbors, tri
 
-    def _characterize_voronoi(self):
+    def _characterize_voronoi(self) -> None:
+        """
+        Update the internal variables with characterize_voronoi.
+        """
         total_area = 0
         Ltensor = np.zeros((self.ndim, self.ndim))
         LLtensor = np.zeros((self.ndim, self.ndim, self.ndim, self.ndim))
 
-        for ridge, ridge_pts in zip(self.orig_ridges, self.orig_ridge_pts):
+        for ridge, ridge_pts in zip(self.orig_ridges, self.orig_ridge_pts, strict=False):
             if -1 in ridge:  # Skip ridges at infinity
                 continue
 
@@ -155,9 +183,7 @@ class PeriodicVoronoiTessellation:
             #     continue
 
             vertices = [self.voronoi.vertices[i] for i in ridge]
-            ridge_N = (
-                self.voronoi.points[ridge_pts[0]] - self.voronoi.points[ridge_pts[1]]
-            )
+            ridge_N = self.voronoi.points[ridge_pts[0]] - self.voronoi.points[ridge_pts[1]]
             ridge_N /= np.linalg.norm(ridge_N)
 
             if self.ndim == 2:  # 2D case
@@ -168,22 +194,24 @@ class PeriodicVoronoiTessellation:
 
             total_area += ridge_area
             Ltensor += ridge_area * np.einsum("i,j->ij", ridge_N, ridge_N)
-            LLtensor += ridge_area * np.einsum(
-                "i,j,k,l->ijkl", ridge_N, ridge_N, ridge_N, ridge_N
-            )
+            LLtensor += ridge_area * np.einsum("i,j,k,l->ijkl", ridge_N, ridge_N, ridge_N, ridge_N)
 
         crystal_volumes = np.zeros(len(self.orig_regions))
         for i, region in enumerate(self.orig_regions):
-            crystal_volumes[i] = ConvexHull(
-                [self.voronoi.vertices[j] for j in region]
-            ).volume
+            crystal_volumes[i] = ConvexHull([self.voronoi.vertices[j] for j in region]).volume
 
         self.crystal_volumes = crystal_volumes
         self.interface_area = total_area
         self.Ltensor = Ltensor
         self.LLtensor = LLtensor
 
-    def write_to_vtu(self, filename):
+    def write_to_vtu(self, filepath: Path) -> None:
+        """
+        Put this Periodic voronoi tesselation into a vtu-file.
+
+        Args:
+            filepath (Path): Path to vtu-file.
+        """
         vertices = self.voronoi.vertices
         crystals = self.orig_indices
         regions = self.orig_regions
@@ -199,10 +227,8 @@ class PeriodicVoronoiTessellation:
             old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertex_indices)
         }
 
-        crystal_index_map = {
-            crystal_idx: new_idx for new_idx, crystal_idx in enumerate(crystals)
-        }
-        with open(filename, "w") as file:
+        crystal_index_map = {crystal_idx: new_idx for new_idx, crystal_idx in enumerate(crystals)}
+        with open(filepath, "w") as file:
             # Write VTU header
             file.write(
                 '<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">\n'
@@ -214,9 +240,7 @@ class PeriodicVoronoiTessellation:
 
             # Write points (vertices)
             file.write("<Points>\n")
-            file.write(
-                '<DataArray type="Float32" NumberOfComponents="3" format="ascii">\n'
-            )
+            file.write('<DataArray type="Float32" NumberOfComponents="3" format="ascii">\n')
             for idx in unique_vertex_indices:
                 v = vertices[idx]
                 file.write(f"{v[0]} {v[1]} {v[2] if dim == 3 else 0}\n")
@@ -241,9 +265,7 @@ class PeriodicVoronoiTessellation:
             # Types
             file.write('<DataArray type="UInt8" Name="types" format="ascii">\n')
             for _ in regions:
-                file.write(
-                    "42\n" if dim == 3 else "7\n"
-                )  # 42 for polyhedron, 7 for polygon
+                file.write("42\n" if dim == 3 else "7\n")  # 42 for polyhedron, 7 for polygon
             file.write("</DataArray>\n")
 
             # For 3D, write faces and face offsets
@@ -251,7 +273,7 @@ class PeriodicVoronoiTessellation:
                 lofe_ids = [[] for _ in range(len(regions))]
 
                 # Iterate through each ridge and the corresponding ridge points
-                for ridge, pts in zip(ridges, ridge_points):
+                for ridge, pts in zip(ridges, ridge_points, strict=False):
                     # Add the ridge to the corresponding cells' face list
                     for pt in pts:
                         if pt in crystals:
@@ -270,9 +292,7 @@ class PeriodicVoronoiTessellation:
                 file.write("</DataArray>\n")
 
                 # Write face offsets
-                file.write(
-                    '<DataArray type="Int32" Name="faceoffsets" format="ascii">\n'
-                )
+                file.write('<DataArray type="Int32" Name="faceoffsets" format="ascii">\n')
                 cumulative_offset = 0
                 for cell_faces in lofe_ids:
                     for face in cell_faces:

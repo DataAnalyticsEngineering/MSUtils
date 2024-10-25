@@ -1,7 +1,7 @@
 import numpy as np
-from lattice_definitions import *
-
+from MSUtils.lattices.lattice_definitions import BCC_lattice, BCCz_lattice, cubic_lattice, FCC_lattice, FBCC_lattice, isotruss_lattice, octet_truss_lattice
 from MSUtils.general.MicrostructureImage import MicrostructureImage
+from MSUtils.general.h52xdmf import write_xdmf
 
 
 def physical_to_voxel(point, dimensions, shape):
@@ -49,9 +49,7 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
 
-def create_lattice_image(
-    Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"
-):
+def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"):
     """
     Create a lattice microstructure image.
 
@@ -108,19 +106,14 @@ if __name__ == "__main__":
         tmp_metadata = metadata.copy()
         tmp_metadata["lattice type"] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
-        microstructures[name].write(
-            h5_filename="data/lattice_microstructures.h5", dset_name=name
-        )
-
-    from MSUtils.general.h52xdmf import write_xdmf
+        microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
 
     write_xdmf(
-        "data/lattice_microstructures.h5",
-        "data/lattice_microstructures.xdmf",
-        L,
-        False,
-        None,
-        True,
+        h5_filepath="data/lattice_microstructures.h5",
+        xdmf_filepath="data/lattice_microstructures.xdmf",
+        microstructure_length=L,
+        time_series=False,
+        verbose=True,
     )
 
     # vertices, edges = octet_truss_lattice()

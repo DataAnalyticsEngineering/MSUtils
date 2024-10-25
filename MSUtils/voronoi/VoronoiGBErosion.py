@@ -1,14 +1,33 @@
 from collections import defaultdict
+from pathlib import Path
+from typing import Self
 
 import h5py
 import numpy as np
 from scipy.spatial import Delaunay
 
+from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
 from MSUtils.voronoi.voronoi_helpers import periodic_erosion
 
 
 class PeriodicVoronoiImageErosion:
-    def __init__(self, voroImg, voroTess, shrink_factor=5):
+    def __init__(
+        self,
+        voroImg: VoronoiImage,
+        voroTess: VoronoiTessellation,
+        shrink_factor: float = 5,
+    ) -> Self:
+        """
+        Class to handle the Erosion of Periodic Voronoi Images.
+
+        Args:
+            voroImg (VoronoiImage): Image.
+            voroTess (VoronoiTessalation): Voronoi-Tesselation
+            shrink_factor (float, optional): Factor to shrink. Defaults to 5.
+
+        Returns:
+            Self: Object
+        """
         self.image = voroImg.image
         self.seeds = voroTess.seeds
         self.shrink_factor = shrink_factor
@@ -26,7 +45,7 @@ class PeriodicVoronoiImageErosion:
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
 
-    def _shrink_and_analyze(self):
+    def _shrink_and_analyze(self) -> None:
         unique_crystals = np.unique(self.image)
         eroded_image = -1 * np.ones_like(self.image)
         Nx, Ny, Nz = self.image.shape
@@ -45,12 +64,8 @@ class PeriodicVoronoiImageErosion:
             crystal_mask = self.image == crystal
             eroded_mask = periodic_erosion(crystal_mask, self.shrink_factor)
             boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
-            boundary_mask_indices = np.array(
-                np.where(boundary_mask)
-            ).T  # Shape: (num_voxels, 3)
-            voxel_coords = (
-                boundary_mask_indices + 0.5
-            ) * voxel_scale  # Shape: (num_voxels, 3)
+            boundary_mask_indices = np.array(np.where(boundary_mask)).T  # Shape: (num_voxels, 3)
+            voxel_coords = (boundary_mask_indices + 0.5) * voxel_scale  # Shape: (num_voxels, 3)
 
             if boundary_mask_indices.size == 0:
                 continue  # Skip if no boundary voxels
@@ -84,9 +99,7 @@ class PeriodicVoronoiImageErosion:
                 if not np.any(inside):
                     continue  # Skip if no inside voxels
 
-                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[
-                    inside
-                ]
+                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
                 inside_indices = boundary_mask_indices[inside_indices_in_voxel_coords]
 
                 # Compute element indices
@@ -103,9 +116,7 @@ class PeriodicVoronoiImageErosion:
                 normal = diff / norm
 
                 # Map extended seed indices to original seed indices (crystal labels)
-                materials = [
-                    self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts
-                ]
+                materials = [self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts]
 
                 num_voxels = inside_indices.shape[0]
                 coords_list.append(inside_indices)
@@ -137,13 +148,17 @@ class PeriodicVoronoiImageErosion:
             self.materials_array = np.empty((0, 2), dtype=int)
             self.normal_array = np.empty((0, 3), dtype=float)
 
-    def _precompute_polyhedrons(self, voroTess):
+    def _precompute_polyhedrons(self, voroTess: VoronoiTessellation) -> None:
         self.polylist = []
         self.polyinfo = []
         self.polytrack = defaultdict(list)
 
-        for i, (ridge, ridge_pts) in enumerate(
-            zip(voroTess.voronoi.ridge_vertices, voroTess.voronoi.ridge_points)
+        for _i, (ridge, ridge_pts) in enumerate(
+            zip(
+                voroTess.voronoi.ridge_vertices,
+                voroTess.voronoi.ridge_points,
+                strict=False,
+            )
         ):
             if -1 in ridge:
                 # Skip infinite ridges
@@ -161,9 +176,17 @@ class PeriodicVoronoiImageErosion:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
                 self.polytrack[crystal_label].append(len(self.polylist) - 1)
 
-    def write(self, dsetname_prefix, filename, order="xyz"):
-        with h5py.File(filename, "a") as h5_file:
-            grp = h5_file.require_group(dsetname_prefix)
+    def write_h5(self, filepath: Path, grp_name: str, order: str = "xyz") -> None:
+        """
+        Write this eroded periodic voronoi image into a h5-file.
+
+        Args:
+            filepath (Path): Path to h5 file.
+            grp_name (str): Name of h5py group.
+            order (str, optional): Either one of 'xyz' or 'zyx'. Defaults to "xyz".
+        """
+        with h5py.File(filepath, "a") as h5_file:
+            grp = h5_file.require_group(grp_name)
             compression_opts = 6
 
             # Define dtype for the structured numpy array for GBVoxelInfo
@@ -183,6 +206,7 @@ class PeriodicVoronoiImageErosion:
                         self.elem_xyz_array,
                         self.materials_array,
                         self.normal_array,
+                        strict=False,
                     )
                 ),
                 dtype=voxel_info_dtype,
@@ -207,12 +231,8 @@ class PeriodicVoronoiImageErosion:
                 )  # Permute spatial dimensions
 
                 permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][
-                    :, ::-1
-                ]
-                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][
-                    :, ::-1
-                ]
+                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][:, ::-1]
+                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][:, ::-1]
 
                 permuted_normals_field = normals_field
                 permuted_normals_field = normals_field.transpose(
