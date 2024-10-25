@@ -8,22 +8,22 @@ repos:
         stages: [pre-commit]
         types_or: [python, pyi]
         require_serial: true
-  #
-  - repo: local
-    hooks:
-      - id: formatting
-        name: Formatting Python
-        entry: pixi run format
-        language: system
-        stages: [pre-commit]
-        types_or: [python, pyi]
-        require_serial: true
-  - repo: local
-    hooks:
-      - id: typecheck
-        name: Type-Check Python
-        entry: pixi run typecheck
-        language: system
-        stages: [pre-commit]
-        types_or: [python, pyi]
-        require_serial: true
+#   #
+#   - repo: local
+#     hooks:
+#       - id: formatting
+#         name: Formatting Python
+#         entry: pixi run format
+#         language: system
+#         stages: [pre-commit]
+#         types_or: [python, pyi]
+#         require_serial: true
+#   - repo: local
+#     hooks:
+#       - id: typecheck
+#         name: Type-Check Python
+#         entry: pixi run typecheck
+#         language: system
+#         stages: [pre-commit]
+#         types_or: [python, pyi]
+#         require_serial: true

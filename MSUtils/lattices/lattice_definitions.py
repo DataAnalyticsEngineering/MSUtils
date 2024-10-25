@@ -309,6 +309,57 @@ def octet_truss_lattice():
     return vertices, edges
 
 
+def auxetic_lattice():
+    d = 0.35  # Inward shift amount for re-entrant geometry
+    vertices = np.array(
+        [
+            [0, 0.5, 0],  # 0
+            [0.5, 0, 0],  # 1
+            [1, 0.5, 0],  # 2
+            [0.5, 1, 0],  # 3
+            [0.5, 0.5, 0],  # 4
+            [0, 0.5, 0.5],  # 5
+            [0.5, 0, 0.5],  # 6
+            [1, 0.5, 0.5],  # 7
+            [0.5, 1, 0.5],  # 8
+            [0 + d, 0.5, 0.5],  # 9
+            [0.5, 0 + d, 0.5],  # 10
+            [1 - d, 0.5, 0.5],  # 11
+            [0.5, 1 - d, 0.5],  # 12
+            [0, 0.5, 1],  # 13
+            [0.5, 0, 1],  # 14
+            [1, 0.5, 1],  # 15
+            [0.5, 1, 1],  # 16
+            [0.5, 0.5, 1],  # 17
+        ],
+        dtype=np.float64,
+    )
+
+    edges = [
+        (0, 4),
+        (1, 4),
+        (2, 4),
+        (3, 4),
+        (0, 9),
+        (1, 10),
+        (2, 11),
+        (3, 12),
+        (5, 9),
+        (6, 10),
+        (7, 11),
+        (8, 12),
+        (9, 13),
+        (10, 14),
+        (11, 15),
+        (12, 16),
+        (13, 17),
+        (14, 17),
+        (15, 17),
+        (16, 17),
+    ]
+    return vertices, edges
+
+
 def plot_lattice(vertices, edges):
     # Create a scatter plot for vertices
     scatter_vertices = go.Scatter3d(

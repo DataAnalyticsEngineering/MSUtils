@@ -1,7 +1,17 @@
 import numpy as np
-from MSUtils.lattices.lattice_definitions import BCC_lattice, BCCz_lattice, cubic_lattice, FCC_lattice, FBCC_lattice, isotruss_lattice, octet_truss_lattice
-from MSUtils.general.MicrostructureImage import MicrostructureImage
+
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.general.MicrostructureImage import MicrostructureImage
+from MSUtils.lattices.lattice_definitions import (
+    BCC_lattice,
+    BCCz_lattice,
+    FBCC_lattice,
+    FCC_lattice,
+    auxetic_lattice,
+    cubic_lattice,
+    isotruss_lattice,
+    octet_truss_lattice,
+)
 
 
 def physical_to_voxel(point, dimensions, shape):
@@ -49,7 +59,9 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
         microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
 
 
-def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, strut_type="circle"):
+def create_lattice_image(
+    Nx, Ny, Nz, unit_cell_func, L=None, radius=0.05, strut_type="circle"
+):
     """
     Create a lattice microstructure image.
 
@@ -63,6 +75,8 @@ def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=[1, 1, 1], radius=0.05, s
     Returns:
     - microstructure: ndarray - The generated microstructure image.
     """
+    if L is None:
+        L = [1, 1, 1]
 
     vertices, edges = unit_cell_func()
     voxel_sizes = [L[i] / [Nx, Ny, Nz][i] for i in range(3)]
@@ -89,6 +103,7 @@ if __name__ == "__main__":
         "FBCC": FBCC_lattice,
         "isotruss": isotruss_lattice,
         "octet": octet_truss_lattice,
+        "auxetic": auxetic_lattice,
         # Add more unit cells here...
     }
 
@@ -106,7 +121,9 @@ if __name__ == "__main__":
         tmp_metadata = metadata.copy()
         tmp_metadata["lattice type"] = name
         microstructures[name] = MicrostructureImage(image=image, metadata=tmp_metadata)
-        microstructures[name].write(h5_filename="data/lattice_microstructures.h5", dset_name=name)
+        microstructures[name].write(
+            h5_filename="data/lattice_microstructures.h5", dset_name=name
+        )
 
     write_xdmf(
         h5_filepath="data/lattice_microstructures.h5",
@@ -116,6 +133,6 @@ if __name__ == "__main__":
         verbose=True,
     )
 
-    # vertices, edges = octet_truss_lattice()
+    # vertices, edges = auxetic_lattice()
     # plot_lattice(vertices, edges)
     # print(check_rigidity(vertices, edges))
