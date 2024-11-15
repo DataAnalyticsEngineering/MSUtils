@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 requires-python = ">= 3.12.7"
-dependencies = []
+dependencies = [ "torch>=2.2.2,<3", "torchvision>=0.17.2,<0.20", "torchaudio>=2.2.2,<3"]
 
 [build-system]
 requires = ["hatchling"]
