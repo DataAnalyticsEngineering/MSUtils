@@ -33,21 +33,27 @@ class ReducedBasis:
         U, Theta, Vh = torch.linalg.svd(matrix, full_matrices=False)
         return U, Theta, Vh
 
-    def compute_basis(self, S):
+    def compute_basis(self, S, low_rank=None):
         """ 
         Computes the reduced basis from the snapshot matrix S using SVD.
         """
         # Ensure S is on the correct device
         S = S.to(self.device)
 
-        # Compute SVD
-        U, Theta, Vh = self._compute_svd(S)
-
-        # Compute the truncation limit
-        cumulative_energy = torch.cumsum(Theta**2, dim=0)
-        total_energy = cumulative_energy[-1]
-        energy_ratio = cumulative_energy / total_energy
-        N = torch.searchsorted(energy_ratio, 1 - self.truncation_limit, right=True).item() + 1
+        if low_rank is None:
+            # Compute full SVD
+            U, Theta, Vh = self._compute_svd(S)
+            # Compute the truncation limit
+            sum_eig = torch.sum(Theta**2)
+            for N in range( 1, S.shape[1]):
+                trunc_error = max( 0, 1- torch.sum(Theta[:N]**2)/sum_eig )**0.5
+                if trunc_error < self.truncation_limit:
+                    break 
+        else:
+            # Compute low-rank SVD
+            U, Theta, V = torch.svd_lowrank(S, q=low_rank)
+            Vh = V.T
+            N = low_rank
 
         # Truncate the reduced basis
         self.Theta = Theta[:N]
@@ -71,12 +77,12 @@ class ReducedBasis:
         S_residual = delta_S - self.B @ xi
 
         # Compute SVD of the residual
-        U_residual, Theta_residual, _ = self._compute_svd(S_residual)
+        U_residual, Theta_residual, W_residual = self._compute_svd(S_residual)
 
         # Construct the combined matrix A
         # Combining existing singular values and projections with residual singular values
         Theta_diag = torch.diag(self.Theta)
-        Theta_residual_diag = torch.diag(Theta_residual)
+        Theta_residual_diag = torch.diag(Theta_residual)@W_residual
         zeros_bottom_left = torch.zeros(Theta_residual.shape[0], self.Theta.shape[0], device=self.device)
 
         A_top = torch.cat((Theta_diag, xi), dim=1)
@@ -87,17 +93,20 @@ class ReducedBasis:
         U_A, Theta_new, _ = self._compute_svd(A)
 
         # Compute the truncation limit
-        cumulative_energy = torch.cumsum(Theta_new**2, dim=0)
-        total_energy = cumulative_energy[-1]
-        energy_ratio = cumulative_energy / total_energy
-        N_trunc = torch.searchsorted(1 - energy_ratio, self.truncation_limit, right=True).item() + 1
+        added_info = torch.linalg.norm( delta_S)**2 #defauls to frobenius in 2d
+        for N_trunc in range( delta_S.shape[1], -1, -1): #revert the range and loop until 1
+            truncation_error = max( 0, torch.sum( Theta_new[-N_trunc:]**2) /added_info )**0.5
+            if truncation_error < self.truncation_limit:
+                break 
+        # reassemble the basis update
+        N_trunc = -N_trunc if N_trunc != 0 else None #for indexing below
 
         # Update self.Theta and self.B
         self.Theta = Theta_new[:N_trunc]
         self.B = torch.cat((self.B, U_residual), dim=1) @ U_A[:, :N_trunc]
 
         # Clean up memory
-        del xi, S_residual, U_residual, Theta_residual
+        del xi, S_residual, U_residual, Theta_residual, W_residual
         del Theta_diag, Theta_residual_diag, zeros_bottom_left, A_top, A_bottom, A, U_A, Theta_new
         torch.cuda.empty_cache()
 

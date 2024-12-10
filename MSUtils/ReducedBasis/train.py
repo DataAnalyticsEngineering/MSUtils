@@ -81,6 +81,7 @@ def compute_2pcf(images):
         The scaled 2PCF snapshots, shape (num_features, batch_size).
     """
     batch_size = images.shape[0]
+    num_elements = images[0].numel()  # Total number of pixels per image
 
     # Determine dimensions for FFT operations
     dims = tuple(range(1, images.dim()))
@@ -89,10 +90,10 @@ def compute_2pcf(images):
     fft_images = torch.fft.fftn(images, dim=dims)
 
     # Compute power spectrum (autocorrelation in Fourier space)
-    power_spectrum = fft_images.conj() * fft_images
+    power_spectrum = fft_images.conj() * fft_images 
 
     # Compute autocorrelation (inverse FFT of power spectrum)
-    autocorr = torch.fft.ifftn(power_spectrum, dim=dims).real
+    autocorr = torch.fft.ifftn(power_spectrum, dim=dims).real / num_elements
 
     # Flatten the autocorrelation functions
     pcf = autocorr.view(batch_size, -1).T  # Shape: (num_pixels, batch_size)
@@ -100,8 +101,7 @@ def compute_2pcf(images):
     # Scale the snapshots with the volume fraction
     vol = torch.mean(pcf, dim=0).sqrt().unsqueeze(0)  # Shape: (1, batch_size)
     pcf = pcf - vol ** 2  # Zero mean
-    pcf = pcf / vol       # remove the volume fraction
-
+    pcf = pcf / (vol - vol**2) # Scale by the standard deviation
     return pcf
 
 
@@ -110,28 +110,35 @@ def main():
     # h5_path = 'data/3d_microstructures.h5'
     # train_group = 'structures_train'
     # test_group = 'structures_test'
-    # n_orig = 50          # Number of snapshots for initial basis computation
-    # n_adjust = 500        # Number of snapshots for each incremental update
-    # total_samples_train = 10000 # Total number of training samples
+    # n_orig = 100          # Number of snapshots for initial basis computation
+    # n_adjust = 50        # Number of snapshots for each incremental update
+    # total_samples_train = 20000 # Total number of training samples
     # total_samples_test = 1000   # Total number of test samples
     # batch_size = 50
+    
+    # device = torch.device('cpu')
+    # dtype = torch.float64
+    # transform = downscale
+    # projection_error_threshold = 0.005
+    # truncation_limit = 0.01
+    # low_rank = None
     
     # Parameters for 2D microstructure data
     h5_path = 'data/FNOCG_2D.h5'
     train_group = 'train_set'
     test_group = 'benchmark_set'
-    n_orig = 10          # Number of snapshots for initial basis computation
-    n_adjust = 10        # Number of snapshots for each incremental update
+    n_orig = 200          # Number of snapshots for initial basis computation
+    n_adjust = 100        # Number of snapshots for each incremental update
     total_samples_train = 30000 # Total number of training samples
     total_samples_test = 1500   # Total number of test samples
-    batch_size = 10
+    batch_size = 100
     
     device = torch.device('cuda')
     dtype = torch.float64
     transform = None
-    projection_error_threshold = 0.05
-    truncation_limit = 0.05
-    
+    projection_error_threshold = 0.005
+    truncation_limit = 0.01
+    low_rank = None
     
     # Load datasets
     train_dataset = H5ImageDataset2D(
@@ -154,7 +161,7 @@ def main():
     basis_computed = False  
     
     # Process training data
-    for loader in [train_loader]:
+    for loader in [train_loader, test_loader]:
         for images in loader:
             pcf = compute_2pcf(images).to(device)
             batch_size_actual = images.size(0)
@@ -169,7 +176,7 @@ def main():
                 if total_snapshots_processed >= n_orig:
                     # Compute the initial basis when we have collected at least n_orig snapshots
                     S = torch.cat(initial_snapshots, dim=1)
-                    rb.compute_basis(S)
+                    rb.compute_basis(S, low_rank)
                     print(f"Initial basis computed with {rb.B.shape[1]} modes.")
                     print("Reduced basis shape:", rb.B.shape)
                     initial_snapshots.clear()
