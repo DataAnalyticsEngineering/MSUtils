@@ -1,3 +1,0 @@
-[submodule "MSUtils/sampling/pyRecEst"]
-	path = MSUtils/sampling/pyRecEst
-	url = https://github.com/FlorianPfaff/pyRecEst.git
