@@ -189,6 +189,7 @@ Thumbs.db
 !data/fibers1.h5
 *.xdmf
 *.vtu
+*.vtk
 
 # pixi environments
 .pixi

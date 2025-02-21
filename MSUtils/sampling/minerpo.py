@@ -20,7 +20,7 @@ class PointEnergy(torch.nn.Module):
         X, description = sampler.get_grid(N, dim)
         X = torch.tensor(X.copy())
         # Add a small perturbation to the points
-        X += 1e-2*torch.randn(X.shape)
+        X += 1e-3*torch.randn(X.shape)
         X = X/((torch.norm(X, dim=1))[:, None])
         self.pts = torch.nn.Parameter(X)
         self.N = N
@@ -64,7 +64,7 @@ class PointEnergy(torch.nn.Module):
         return W
 
 # initial points
-model = PointEnergy(dim=5, N=32)
+model = PointEnergy(dim=5, N=512)
 
 print(f"initial energy: {model.loss():16.10e}")
 param = []
