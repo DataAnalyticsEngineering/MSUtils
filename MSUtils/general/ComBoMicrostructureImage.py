@@ -363,9 +363,9 @@ class ComBoMicrostructureImage:
 
 def main():
 
+    from MSUtils.general.h52xdmf import write_xdmf
     from MSUtils.general.MicrostructureImage import MicrostructureImage
     from MSUtils.general.resize_image import resize_image
-    from MSUtils.general.h52xdmf import write_xdmf
 
     ms = MicrostructureImage(h5_filename="data/fibers1.h5", dset_name="/img")
     ms = MicrostructureImage(image=resize_image(ms.image, target_resolution=[256, 256, 256]))
