@@ -7,7 +7,6 @@ import numpy as np
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
-from MSUtils.voronoi.voronoi_helpers import periodic_erosion
 
 
 class PeriodicVoronoiImageErosion:
@@ -47,7 +46,6 @@ class PeriodicVoronoiImageErosion:
 
     def _shrink_and_analyze(self) -> None:
         unique_crystals = np.unique(self.image)
-        eroded_image = -1 * np.ones_like(self.image)
         eroded_image = self.image.copy()
         Nx, Ny, Nz = self.image.shape
         hx, hy, hz = self.L / np.array([Nx, Ny, Nz])
@@ -65,9 +63,6 @@ class PeriodicVoronoiImageErosion:
             crystal_mask = (self.image == crystal)
             crystal_mask_indices = np.array(np.where(crystal_mask)).T
             voxel_coords = (crystal_mask_indices + 0.5) * voxel_scale
-
-            # if boundary_mask_indices.size == 0:
-                # continue  # Skip if no boundary voxels
 
             # Initialize a boolean array to keep track of checked voxels
             voxel_checked = np.full(len(voxel_coords), False, dtype=bool)
@@ -102,10 +97,10 @@ class PeriodicVoronoiImageErosion:
                 if candidate_voxel_coords.size == 0:
                     continue  # Skip if no candidate voxels
 
-                # Perform point-in-polyhedron test
-                inside = delaunay.find_simplex(candidate_voxel_coords) >= 0
-                inside &= ~voxel_checked[candidate_indices_in_voxel_coords]
-                # Perfrom point-has-less-than-extrusion-factor-distance-to-interface-plane test
+                # Identify grain boundary voxels
+                # Keep all crystal voxels where projection onto the facet plane lies within the facet
+                inside = delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
+                # Keep all voxels that ALSO have less than extrusion factor distance to inerface plane (projection onto normal vector)
                 inside &= (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) < self.extrusion_factor)
 
                 if not np.any(inside):
