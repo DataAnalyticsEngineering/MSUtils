@@ -67,6 +67,9 @@ class PeriodicVoronoiImageErosion:
         voxel_scale = np.array([hx, hy, hz])
 
         for crystal in unique_crystals:
+            # Check if crystal touches itself (crystal is its own neighbor, requires additional tests below)
+            self_touching = crystal in self.voroTess.neighbors[crystal]
+
             crystal_mask = (self.image == crystal)
             crystal_mask_indices = np.array(np.where(crystal_mask)).T
             voxel_coords = (crystal_mask_indices + 0.5) * voxel_scale
@@ -105,10 +108,11 @@ class PeriodicVoronoiImageErosion:
                     continue  # Skip if no candidate voxels
 
                 # Identify grain boundary voxels
-                # Keep all crystal voxels where projection onto the facet plane lies within the facet
-                inside = delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
-                # Keep all voxels that ALSO have less than extrusion factor distance to inerface plane (projection onto normal vector)
-                inside &= (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) < self.extrusion_factor)
+                # Keep all voxels that have less than extrusion factor distance to inerface plane (projection onto normal vector)
+                inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) < self.extrusion_factor)
+                if self_touching:
+                    # Keep all crystal voxels where projection onto the facet plane ALSO lies within the facet
+                    inside &= delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
 
                 if not np.any(inside):
                     continue  # Skip if no inside voxels

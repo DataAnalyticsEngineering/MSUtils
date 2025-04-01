@@ -156,10 +156,7 @@ class PeriodicVoronoiTessellation:
                         if i not in neighbors:
                             neighbors[i] = set()
                         # Map replicas back to their original counterparts
-                        # neighbors[i].add(j % len(seeds))
-                        mapped_j = j % len(seeds)
-                        if i != mapped_j:
-                            neighbors[i].add(mapped_j)
+                        neighbors[i].add(j % len(seeds))
 
         # Convert sets to lists
         for key in neighbors:
