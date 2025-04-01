@@ -9,6 +9,7 @@ from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 def main():
     num_crystals = 27
     L = [1, 1, 1]
+    interface_thickness = 0.02
 
     SeedInfo = VoronoiSeeds(num_crystals, L, "sobol", BitGeneratorSeed=42)
 
@@ -20,7 +21,8 @@ def main():
     voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="zyx")
     write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1, 1, 1])
 
-    voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, interface_thickness=0.05)
+    # Disable 'analyze_thickness_distribution' to speed up computations and save memory
+    voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, interface_thickness=interface_thickness, analyze_thickness_distribution=True)
     voroErodedImg.write_h5("data/voroImg_eroded.h5", "/dset_0", order="zyx")
     write_xdmf(
         "data/voroImg_eroded.h5",
