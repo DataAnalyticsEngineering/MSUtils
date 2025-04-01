@@ -3,7 +3,7 @@ name = "MSUtils"
 version = "0.1.1"
 description = "Add a short description here"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
-requires-python = ">= 3.12.7"
+requires-python = ">=3.12"
 dependencies = []
 
 [build-system]
@@ -39,6 +39,7 @@ lxml = ">=5.2.2,<6"
 sympy = ">=1.9.0,<2"
 jupyter = ">=1.1.1,<2"
 pre-commit = ">=4.0.1,<5"
+pyvista = ">=0.44.2,<0.45"
 
 [tool.pixi.feature.build.dependencies]
 twine = "*"
