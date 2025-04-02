@@ -103,7 +103,7 @@ class PeriodicVoronoiImageErosion:
 
                 # Identify grain boundary voxels
                 # Keep all voxels that have less than extrusion factor distance to inerface plane (projection onto normal vector)
-                inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) < self.extrusion_factor)
+                inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) <= self.extrusion_factor)
                 if self_touching:
                     # Keep all crystal voxels where projection onto the facet plane ALSO lies within the facet
                     inside &= delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
@@ -228,7 +228,6 @@ class PeriodicVoronoiImageErosion:
                 permuted_eroded_image = self.eroded_image
                 permuted_voxel_info_array = voxel_info_array.copy()
                 permuted_normals_field = normals_field
-                permuted_dist_map = self.dist_map
             elif order == "zyx":
                 permuted_eroded_image = self.eroded_image.transpose(
                     2, 1, 0
