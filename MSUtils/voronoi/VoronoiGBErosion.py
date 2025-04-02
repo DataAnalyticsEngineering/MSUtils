@@ -5,8 +5,6 @@ from typing import Self
 import h5py
 import numpy as np
 from scipy.spatial import Delaunay
-from scipy.ndimage import distance_transform_edt
-
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
 
 
@@ -15,8 +13,7 @@ class PeriodicVoronoiImageErosion:
         self,
         voroImg: VoronoiImage,
         voroTess: VoronoiTessellation,
-        interface_thickness: float = 0.05,
-        analyze_thickness_distribution: bool = False
+        interface_thickness: float = 0.05
     ) -> Self:
         """
         Class to handle the Erosion of Periodic Voronoi Images.
@@ -25,7 +22,6 @@ class PeriodicVoronoiImageErosion:
             voroImg (VoronoiImage): Image.
             voroTess (VoronoiTessalation): Voronoi-Tesselation
             interface_thickness (float, optional): Total thickness to extrude to. Defaults to 0.05.
-            analyze_thickness_distribution (bool, optional): Export additional thickness statistics if True. Defaults to False.
 
         Returns:
             Self: Object
@@ -48,8 +44,6 @@ class PeriodicVoronoiImageErosion:
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
 
-        if analyze_thickness_distribution:
-            self._analyze_thickness_distribution()
 
     def _shrink_and_analyze(self) -> None:
         unique_crystals = np.unique(self.image)
@@ -185,19 +179,6 @@ class PeriodicVoronoiImageErosion:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
                 self.polytrack[crystal_label].append(len(self.polylist) - 1)
 
-    def _analyze_thickness_distribution(self) -> None:
-        """
-        Compute distance map (distance to closest bulk voxel for each GB voxel) of the eroded image for visual validation of erosion.
-        """
-
-        assert self.L[0] == self.L[1] == self.L[2], 'Distance map can only be computed for cube sample.'
-        assert self.N[0] == self.N[1] == self.N[2], 'Distance map can only be computed for cube voxels.'
-
-        # Compute distance map of binarized image (shortest distance of GB voxels to bulk voxels)
-        self.dist_map = distance_transform_edt(self.eroded_image == -1)
-        self.dist_map *= self.L[0] / self.N[0]
-
-
     def write_h5(self, filepath: Path, grp_name: str, order: str = "xyz") -> None:
         """
         Write this eroded periodic voronoi image into a h5-file.
@@ -262,12 +243,6 @@ class PeriodicVoronoiImageErosion:
                     2, 1, 0, 3
                 )  # Permute spatial dimensions
 
-                if self.dist_map is not None:
-                    permuted_dist_map = self.dist_map
-                    permuted_dist_map = self.dist_map.transpose(
-                        2, 1, 0
-                    ) # Permute spatial dimensions
-
             # Save eroded image to .h5 file
             if "eroded_image" in grp:
                 del grp["eroded_image"]
@@ -302,15 +277,3 @@ class PeriodicVoronoiImageErosion:
                 compression="gzip",
                 compression_opts=compression_opts,
             )
-
-            if self.dist_map is not None:
-                if "dist_map" in grp:
-                    del grp["dist_map"]
-                    print("Overwriting existing 'dist_map' dataset.")
-                grp.create_dataset(
-                    "dist_map",
-                    data=permuted_dist_map,
-                    dtype="f8",
-                    compression="gzip",
-                    compression_opts=compression_opts,
-                )
