@@ -4,6 +4,7 @@ from typing import Self
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
@@ -15,7 +16,7 @@ class PeriodicVoronoiImageErosion:
         self,
         voroImg: VoronoiImage,
         voroTess: VoronoiTessellation,
-        shrink_factor: float = 5,
+        interface_thickness: float = 0.05,
     ) -> Self:
         """
         Class to handle the Erosion of Periodic Voronoi Images.
@@ -23,14 +24,14 @@ class PeriodicVoronoiImageErosion:
         Args:
             voroImg (VoronoiImage): Image.
             voroTess (VoronoiTessalation): Voronoi-Tesselation
-            shrink_factor (float, optional): Factor to shrink. Defaults to 5.
+            interface_thickness (float, optional): Total thickness to extrude to. Defaults to 5.
 
         Returns:
             Self: Object
         """
         self.image = voroImg.image
         self.seeds = voroTess.seeds
-        self.shrink_factor = shrink_factor
+        self.extrusion_factor = interface_thickness / 2    # Extrusion factor in both directions of the plane
         self.L = np.array(voroImg.L)
         self.eroded_image = None
         self.N = np.array(voroImg.resolution)
@@ -45,6 +46,64 @@ class PeriodicVoronoiImageErosion:
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
 
+    def _periodic_thickness_consistent_erosion(self, crystal) -> npt.ArrayLike:
+
+        # Check if crystal touches itself (crystal is its own neighbor, requires additional tests below)
+        self_touching = crystal in self.voroTess.neighbors[crystal]
+
+        crystal_mask = (self.image == crystal)
+        crystal_mask_indices = np.array(np.where(crystal_mask)).T
+        voxel_coords = (crystal_mask_indices + 0.5) * self.voxel_scale
+
+        eroded_mask = crystal_mask.copy()
+
+        # Use the crystal label as a key in the dictionary
+        poly_indices = self.polytrack.get(crystal, [])
+
+        for poly_index in poly_indices:
+            # Identify normal
+            ridge_pts = self.polyinfo[poly_index]  # Seed indices
+            diff = (
+                self.voroTess.voronoi.points[ridge_pts[1]]
+                - self.voroTess.voronoi.points[ridge_pts[0]]
+            )
+            norm = np.linalg.norm(diff)
+            if norm == 0:
+                continue  # Avoid division by zero
+            normal = diff / norm
+
+            delaunay = self.polylist[poly_index]
+            points = delaunay.points
+
+            # Bounding box filtering
+            min_coords = np.min(points, axis=0)
+            max_coords = np.max(points, axis=0)
+            bbox_mask = np.all(
+                (voxel_coords >= min_coords) & (voxel_coords <= max_coords), axis=1
+            )
+            candidate_voxel_coords = voxel_coords[bbox_mask]
+            candidate_indices_in_voxel_coords = np.where(bbox_mask)[0]
+
+            if candidate_voxel_coords.size == 0:
+                continue  # Skip if no candidate voxels
+
+            # Identify grain boundary voxels
+            # Keep all voxels that have less than extrusion factor distance to inerface plane (projection onto normal vector)
+            inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) <= self.extrusion_factor)
+            if self_touching:
+                # Keep all crystal voxels where projection onto the facet plane ALSO lies within the facet
+                inside &= delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
+
+            if not np.any(inside):
+                continue  # Skip if no inside voxels
+
+            inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
+            inside_indices = crystal_mask_indices[inside_indices_in_voxel_coords]
+
+            eroded_mask[*inside_indices.T] = 0
+
+        return eroded_mask
+
     def _shrink_and_analyze(self) -> None:
         unique_crystals = np.unique(self.image)
         eroded_image = -1 * np.ones_like(self.image)
@@ -58,14 +117,15 @@ class PeriodicVoronoiImageErosion:
         normal_list = []
 
         # Precompute voxel scales
-        voxel_scale = np.array([hx, hy, hz])
+        self.voxel_scale = np.array([hx, hy, hz])
 
         for crystal in unique_crystals:
             crystal_mask = self.image == crystal
-            eroded_mask = periodic_erosion(crystal_mask, self.shrink_factor)
+            eroded_mask = self._periodic_thickness_consistent_erosion(crystal)
+
             boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
             boundary_mask_indices = np.array(np.where(boundary_mask)).T  # Shape: (num_voxels, 3)
-            voxel_coords = (boundary_mask_indices + 0.5) * voxel_scale  # Shape: (num_voxels, 3)
+            voxel_coords = (boundary_mask_indices + 0.5) * self.voxel_scale  # Shape: (num_voxels, 3)
 
             if boundary_mask_indices.size == 0:
                 continue  # Skip if no boundary voxels
