@@ -9,10 +9,10 @@ from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 def main():
     num_crystals = 27
     L = [1, 1, 1]
-    Nx, Ny, Nz = 128, 128, 128
-    interface_thickness = 1/Nx*8
+    Nx, Ny, Nz = 129, 129, 129
+    interface_thickness = (1.0/129)*6
 
-    SeedInfo = VoronoiSeeds(num_crystals, L, "sobol", BitGeneratorSeed=42)
+    SeedInfo = VoronoiSeeds(num_crystals, L, "rubiks-cube", BitGeneratorSeed=42)
 
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")

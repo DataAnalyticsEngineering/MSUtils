@@ -305,7 +305,7 @@ class PeriodicVoronoiImageErosion:
                 print("Overwriting existing 'eroded_image' dataset.")
             grp.create_dataset(
                 "eroded_image",
-                data=permuted_eroded_image,
+                data=permuted_eroded_image[:-1,: -1, :-1],
                 dtype=np.int32,
                 compression="gzip",
                 compression_opts=compression_opts,
@@ -328,7 +328,7 @@ class PeriodicVoronoiImageErosion:
                 print("Overwriting existing 'normals' dataset.")
             grp.create_dataset(
                 "normals",
-                data=permuted_normals_field,
+                data=permuted_normals_field[:-1,: -1, :-1, :],
                 dtype="f8",
                 compression="gzip",
                 compression_opts=compression_opts,
