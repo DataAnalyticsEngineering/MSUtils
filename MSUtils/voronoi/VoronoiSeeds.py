@@ -42,7 +42,7 @@ class VoronoiSeeds:
 
         Notes:
 
-            - method can be one of the following: "random", "lhs-llyod", "halton", "sobol", "honeycomb", "rubiks-cube".
+            - method can be one of the following: "random", "lhs-llyod", "halton", "sobol", "honeycomb", "rubiks-cube", "diamond".
         """
         if RVE_length is None:
             RVE_length = [1, 1, 1]
@@ -116,6 +116,9 @@ class VoronoiSeeds:
                 self.seeds = self._generate_lattice(
                     N[0], N[1], N[2], self.RVE_length, stagger=False
                 )
+            case "diamond": # Diamond-like seed points
+                self.num_crystals = 2
+                self.seeds = np.array([[0, 0, 0], [0.5, 0.5, 0.5]])
             case _:
                 raise ValueError("Unknown sampling method! : " + self.method)
                 # Add more sampling methods here if needed

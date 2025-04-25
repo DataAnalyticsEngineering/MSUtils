@@ -9,20 +9,20 @@ from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 def main():
     num_crystals = 27
     L = [1, 1, 1]
-    Nx, Ny, Nz = 129, 129, 129
-    interface_thickness = (1.0/129)*6
-
-    SeedInfo = VoronoiSeeds(num_crystals, L, "rubiks-cube", BitGeneratorSeed=42)
+    Nx, Ny, Nz = 512, 512, 512
+    
+    SeedInfo = VoronoiSeeds(num_crystals, L, "diamond", BitGeneratorSeed=42)
 
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")
     
     voroImg = PeriodicVoronoiImage([Nx, Ny, Nz], SeedInfo.seeds, L)
-    voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="zyx")
+    voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="xyz")
     write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1, 1, 1])
 
+    interface_thickness = (1.0/512)*12
     voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, interface_thickness=interface_thickness)
-    voroErodedImg.write_h5("data/voroImg_eroded.h5", "/dset_0", order="zyx")
+    voroErodedImg.write_h5("data/voroImg_eroded.h5", "/dset_0", order="xyz")
     write_xdmf(
         "data/voroImg_eroded.h5",
         "data/voroImg_eroded.xdmf",

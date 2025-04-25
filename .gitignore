@@ -198,3 +198,6 @@ Thumbs.db
 # pytest-cov
 .coverage
 coverage
+
+# Dedicated folder for personal projects
+**/scratch/

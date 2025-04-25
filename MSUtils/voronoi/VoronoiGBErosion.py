@@ -286,6 +286,7 @@ class PeriodicVoronoiImageErosion:
                 permuted_voxel_info_array = voxel_info_array.copy()
                 permuted_normals_field = normals_field
             elif order == "zyx":
+                # There's a bug in here !!!!
                 permuted_eroded_image = self.eroded_image.transpose(
                     2, 1, 0
                 )  # Permute spatial dimensions
@@ -305,7 +306,7 @@ class PeriodicVoronoiImageErosion:
                 print("Overwriting existing 'eroded_image' dataset.")
             grp.create_dataset(
                 "eroded_image",
-                data=permuted_eroded_image[:-1,: -1, :-1],
+                data=permuted_eroded_image,
                 dtype=np.int32,
                 compression="gzip",
                 compression_opts=compression_opts,
@@ -328,7 +329,7 @@ class PeriodicVoronoiImageErosion:
                 print("Overwriting existing 'normals' dataset.")
             grp.create_dataset(
                 "normals",
-                data=permuted_normals_field[:-1,: -1, :-1, :],
+                data=permuted_normals_field,
                 dtype="f8",
                 compression="gzip",
                 compression_opts=compression_opts,
