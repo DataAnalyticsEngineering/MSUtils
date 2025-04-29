@@ -313,6 +313,9 @@ class PeriodicVoronoiImageErosion:
                 compression_opts=compression_opts,
             )
             image_dataset.attrs["permute_order"] = order
+            image_dataset.attrs["interface_thickness"] = self.extrusion_factor*2
+            image_dataset.attrs["L"] = self.L
+            image_dataset.attrs.create("VoronoiSeeds_xyz", np.array(self.seeds, dtype=np.float64))
 
             # Save GBVoxelInfo to .h5 file
             if "GBVoxelInfo" in grp:
