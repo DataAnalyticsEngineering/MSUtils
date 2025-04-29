@@ -7,31 +7,36 @@ from MSUtils.voronoi.VoronoiTessellation import PeriodicVoronoiTessellation
 
 
 def main():
-    num_crystals = 27
+    num_crystals = 8
     L = [1, 1, 1]
-    Nx, Ny, Nz = 512, 512, 512
+    Nx, Ny, Nz = 128, 128, 128
+    permute_order = "zyx"
     
+    # Generate Voronoi seeds and tessellation
     SeedInfo = VoronoiSeeds(num_crystals, L, "diamond", BitGeneratorSeed=42)
-
     voroTess = PeriodicVoronoiTessellation(L, SeedInfo.seeds)
     voroTess.write_to_vtu("data/voroTess.vtu")
     
+    # Generate Voronoi image
     voroImg = PeriodicVoronoiImage([Nx, Ny, Nz], SeedInfo.seeds, L)
-    voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order="xyz")
+    voroImg.write(h5_filename="data/voroImg.h5", dset_name="/dset_0", order=permute_order)
     write_xdmf("data/voroImg.h5", "data/voroImg.xdmf", microstructure_length=[1, 1, 1])
 
-    interface_thickness = (1.0/512)*12
+    # Generate Voronoi image with grain boundaries of a specific thickness
+    interface_thickness = (1.0/256)*6
     voroErodedImg = PeriodicVoronoiImageErosion(voroImg, voroTess, interface_thickness=interface_thickness)
-    voroErodedImg.write_h5("data/voroImg_eroded.h5", "/dset_0", order="xyz")
+    voroErodedImg.write_h5("data/voroImg_eroded.h5", "/dset_0", order=permute_order)
     write_xdmf(
         "data/voroImg_eroded.h5",
         "data/voroImg_eroded.xdmf",
         microstructure_length=[1, 1, 1],
     )
 
+    # Calculate and print volume fraction of grain boundary
     msimage = MicrostructureImage(image=voroErodedImg.eroded_image, L=L)
     phase_volume_fraction = msimage.volume_fractions.get(-1, 0) * 100
     print(f"Volume fraction of grain boundary (phase: -1): {phase_volume_fraction:.4f}%")
+    print(f"Interface thickness: {interface_thickness:.10f}")
 
 
 if __name__ == "__main__":

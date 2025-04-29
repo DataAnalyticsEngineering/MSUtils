@@ -8,8 +8,6 @@ import numpy.typing as npt
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
-from MSUtils.voronoi.voronoi_helpers import periodic_erosion
-
 
 class PeriodicVoronoiImageErosion:
     def __init__(
@@ -236,14 +234,14 @@ class PeriodicVoronoiImageErosion:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
                 self.polytrack[crystal_label].append(len(self.polylist) - 1)
 
-    def write_h5(self, filepath: Path, grp_name: str, order: str = "xyz") -> None:
+    def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx") -> None:
         """
         Write this eroded periodic voronoi image into a h5-file.
 
         Args:
             filepath (Path): Path to h5 file.
             grp_name (str): Name of h5py group.
-            order (str, optional): Either one of 'xyz' or 'zyx'. Defaults to "xyz".
+            order (str, optional): Either one of 'xyz' or 'zyx'. Defaults to "zyx".
         """
         with h5py.File(filepath, "a") as h5_file:
             grp = h5_file.require_group(grp_name)
@@ -282,35 +280,39 @@ class PeriodicVoronoiImageErosion:
 
             # Optionally permute the eroded_image before saving, based on the order parameter
             if order == "xyz":
+                #################################
+                # Image is in order of x, y, z
+                # Vector field is in order of x, y, z
+                #################################
                 permuted_eroded_image = self.eroded_image
                 permuted_voxel_info_array = voxel_info_array.copy()
                 permuted_normals_field = normals_field
             elif order == "zyx":
-                # There's a bug in here !!!!
-                permuted_eroded_image = self.eroded_image.transpose(
-                    2, 1, 0
-                )  # Permute spatial dimensions
+                #################################
+                # Image is in order of z, y, x
+                # Vector field is in order of x, y, z
+                #################################
+                permuted_eroded_image = self.eroded_image.transpose(2, 1, 0) 
 
                 permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_voxel_info_array["coords"] = voxel_info_array["coords"][:, ::-1]
-                permuted_voxel_info_array["normal"] = voxel_info_array["normal"][:, ::-1]
+                permuted_voxel_info_array["coords"] = voxel_info_array["coords"]
+                permuted_voxel_info_array["normal"] = voxel_info_array["normal"]
 
                 permuted_normals_field = normals_field
-                permuted_normals_field = normals_field.transpose(
-                    2, 1, 0, 3
-                )  # Permute spatial dimensions
+                permuted_normals_field = normals_field.transpose(2, 1, 0, 3)
 
             # Save eroded image to .h5 file
             if "eroded_image" in grp:
                 del grp["eroded_image"]
                 print("Overwriting existing 'eroded_image' dataset.")
-            grp.create_dataset(
+            image_dataset = grp.create_dataset(
                 "eroded_image",
                 data=permuted_eroded_image,
                 dtype=np.int32,
                 compression="gzip",
                 compression_opts=compression_opts,
             )
+            image_dataset.attrs["permute_order"] = order
 
             # Save GBVoxelInfo to .h5 file
             if "GBVoxelInfo" in grp:
@@ -327,10 +329,11 @@ class PeriodicVoronoiImageErosion:
             if "normals" in grp:
                 del grp["normals"]
                 print("Overwriting existing 'normals' dataset.")
-            grp.create_dataset(
+            normals_dataset = grp.create_dataset(
                 "normals",
                 data=permuted_normals_field,
                 dtype="f8",
                 compression="gzip",
                 compression_opts=compression_opts,
             )
+            normals_dataset.attrs["permute_order"] = order
