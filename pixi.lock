@@ -406,7 +406,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
       - pypi: https://files.pythonhosted.org/packages/84/c2/80633736cd183ee4a62107413def345f7e6e3c01563dbca1417363cf957e/build-1.2.2.post1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.4.6-pyhd8ed1ab_0.conda
@@ -766,7 +766,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.6-h915ae27_0.conda
       - pypi: https://files.pythonhosted.org/packages/84/c2/80633736cd183ee4a62107413def345f7e6e3c01563dbca1417363cf957e/build-1.2.2.post1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.4.6-pyhd8ed1ab_0.conda
@@ -1127,7 +1127,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
       - pypi: https://files.pythonhosted.org/packages/84/c2/80633736cd183ee4a62107413def345f7e6e3c01563dbca1417363cf957e/build-1.2.2.post1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_libavif_api-1.1.1-h57928b3_1.conda
@@ -1453,7 +1453,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
       - pypi: https://files.pythonhosted.org/packages/84/c2/80633736cd183ee4a62107413def345f7e6e3c01563dbca1417363cf957e/build-1.2.2.post1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
   default:
     channels:
@@ -1841,7 +1841,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zlib-ng-2.2.2-h5888daf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstandard-0.23.0-py312hef9b889_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.4.6-pyhd8ed1ab_0.conda
@@ -2184,7 +2184,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.2.4-h04d1b7c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstandard-0.23.0-py312h7122b0e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.6-h915ae27_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.4.6-pyhd8ed1ab_0.conda
@@ -2528,7 +2528,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.2.4-h13dfb9a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.23.0-py313hf2da073_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_libavif_api-1.1.1-h57928b3_1.conda
@@ -2836,7 +2836,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.2.2-he0c23c2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.23.0-py312h7606c53_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
   utility:
     channels:
@@ -3252,7 +3252,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zlib-ng-2.2.2-h5888daf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstandard-0.23.0-py312hef9b889_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/accessible-pygments-0.0.5-pyhd8ed1ab_1.conda
@@ -3624,7 +3624,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.2.4-h04d1b7c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstandard-0.23.0-py312h7122b0e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.6-h915ae27_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/accessible-pygments-0.0.5-pyhd8ed1ab_1.conda
@@ -3997,7 +3997,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.2.4-h13dfb9a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.23.0-py313hf2da073_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/win-64/_libavif_api-1.1.1-h57928b3_1.conda
@@ -4332,7 +4332,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.2.2-he0c23c2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.23.0-py312h7606c53_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
-      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+      - pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
       - pypi: .
 packages:
 - conda: https://conda.anaconda.org/conda-forge/win-64/_libavif_api-1.1.1-h57928b3_1.conda
@@ -15797,7 +15797,7 @@ packages:
   version: 1.2.0
   sha256: 9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913
   requires_python: '>=3.7'
-- pypi: git+https://github.com/FlorianPfaff/pyRecEst.git@27e8a37a7e0050170d9494a94fd87fbf65793a76
+- pypi: git+https://github.com/FlorianPfaff/pyRecEst.git#f9c9bc48ddc61f39d492b617c37be8a1f225f137
   name: pyrecest
   version: 0.0.0
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pyside6-6.7.3-py312h91f0f75_1.conda

@@ -190,6 +190,7 @@ Thumbs.db
 *.xdmf
 *.vtu
 *.vtk
+*.json
 
 # pixi environments
 .pixi
