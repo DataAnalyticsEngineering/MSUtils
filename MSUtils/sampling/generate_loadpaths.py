@@ -3,11 +3,11 @@ from pathlib import Path
 from pyrecest.sampling.hyperspherical_sampler import LeopardiSampler
 
 
-def generate_load_paths(grid: np.ndarray,
-                        num_steps: int = 10,
-                        dev_max: float = 0.03,  
-                        vol_max: float = 0.005
-                       ) -> np.ndarray:
+def generate_linear_load_paths(grid: np.ndarray,
+                               num_steps: int = 10,
+                               dev_max: float = 0.03,  
+                               vol_max: float = 0.005
+                               ) -> np.ndarray:
     """
     Parameters
     ----------
@@ -137,10 +137,10 @@ if __name__ == "__main__":
     grid, description = sampler.get_grid(num_load_paths, dim - 1)
 
     
-    paths = generate_load_paths(grid, 
-                                num_steps=num_time_steps,
-                                dev_max=max_deviatoric_strain,
-                                vol_max=max_volumetric_strain)
+    paths = generate_linear_load_paths(grid, 
+                                       num_steps=num_time_steps,
+                                       dev_max=max_deviatoric_strain,
+                                       vol_max=max_volumetric_strain)
     
     dump_load_paths_to_json(paths,
                             filename="data/macroscale_loading.json",
