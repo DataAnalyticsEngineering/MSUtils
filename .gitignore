@@ -191,6 +191,7 @@ Thumbs.db
 *.vtu
 *.vtk
 *.json
+*.vti
 
 # pixi environments
 .pixi
@@ -199,3 +200,6 @@ Thumbs.db
 # pytest-cov
 .coverage
 coverage
+
+# Dedicated folder for personal projects
+**/scratch/

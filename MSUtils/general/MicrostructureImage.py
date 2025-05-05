@@ -89,12 +89,25 @@ class MicrostructureImage:
             if self.dset_name in f:
                 dset = f[self.dset_name]
                 self.image = dset[...]
-                self.shape = self.image.shape
                 # Read metadata
                 self.metadata = {key: value for key, value in dset.attrs.items()}
-                # Read resolution and L from attributes if available
+                
+                # check for permute_order attribute
+                if "permute_order" in dset.attrs:
+                    permute_order = dset.attrs["permute_order"]
+                else:
+                    permute_order = "zyx"  # Default order
+                    
+                if permute_order == "zyx":
+                    self.image = self.image.transpose(2, 1, 0)
+                elif permute_order != "xyz":
+                    raise ValueError(
+                        f"Invalid permute order {permute_order} in dataset {self.dset_name}"
+                    )
+                self.shape = self.image.shape
                 self.resolution = self.shape
-                if "L" in dset.attrs:
+                # Read L from attributes if available
+                if "L" in dset.attrs and isinstance(dset.attrs["L"], (list, tuple)):
                     self.L = dset.attrs["L"]
                 else:
                     self.L = [1.0, 1.0, 1.0]  # Default physical dimensions
@@ -108,7 +121,7 @@ class MicrostructureImage:
         self,
         h5_filename: Optional[str] = None,
         dset_name: Optional[str] = None,
-        order: str = "xyz",
+        order: str = "zyx",
         compression_level: int = 6,
     ) -> None:
         """
@@ -147,7 +160,7 @@ class MicrostructureImage:
         if order == "xyz":
             permuted_image = self.image
         elif order == "zyx":
-            permuted_image = np.transpose(self.image, (2, 1, 0))
+            permuted_image = self.image.transpose(2, 1, 0)
         else:
             raise ValueError("Invalid order specified. Use 'xyz' or 'zyx'.")
 
@@ -161,6 +174,7 @@ class MicrostructureImage:
                 compression="gzip",
                 compression_opts=compression_level,
             )
+            dset.attrs["permute_order"] = order
 
             # Write metadata
             if self.metadata:
