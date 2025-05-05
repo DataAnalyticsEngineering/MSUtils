@@ -100,14 +100,12 @@ def main():
     merge_h5_files(args.output, args.inputs, verbose=args.verbose, overwrite=args.overwrite)
 
 if __name__ == "__main__":
-    # main()
+    main()
 
     # Example usage from Python
-    output_file = 'path/to/aggregated_h5_file.h5'
-    input_files = [f'path/to/individual/h5_file_{k}.h5' for k in range(0, 20)]
-    verbose = False
-    overwrite = True
-    merge_h5_files(output_file, input_files, verbose=verbose, overwrite=overwrite)
-    
-    # # Example usage from command line
-    # # nohup /usr/bin/time -v python merge_h5_files.py> nohup_test.txt 2>&1 &
+    # output_file = 'path/to/aggregated_h5_file.h5'
+    # input_files = [f'path/to/individual/h5_file_{k}.h5' for k in range(0, 20)]
+    # verbose = False
+    # overwrite = True
+    # merge_h5_files(output_file, input_files, verbose=verbose, overwrite=overwrite)
+
