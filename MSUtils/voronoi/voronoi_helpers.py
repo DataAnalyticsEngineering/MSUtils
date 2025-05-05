@@ -25,7 +25,9 @@ def periodic_difference(
     return diff, norm_diff
 
 
-def periodic_dist_matrix(A: npt.ArrayLike, B: npt.ArrayLike, RVE_length: float) -> float:
+def periodic_dist_matrix(
+    A: npt.ArrayLike, B: npt.ArrayLike, RVE_length: float
+) -> float:
     """
     Compute periodic distance matrix between points in A and B.
 
@@ -81,7 +83,9 @@ def periodic_erosion(mask: npt.ArrayLike, shrink_factor: float) -> npt.ArrayLike
     ]
 
 
-def calculate_polygon_area_3d(vertices: list[npt.ArrayLike], normal: npt.ArrayLike) -> float:
+def calculate_polygon_area_3d(
+    vertices: list[npt.ArrayLike], normal: npt.ArrayLike
+) -> float:
     """
     Calculate the area of a polygon in 3D.
 
@@ -113,7 +117,10 @@ def calculate_polygon_area_3d(vertices: list[npt.ArrayLike], normal: npt.ArrayLi
 
     # Project vertices onto the plane spanned by u and v
     vertices_2d = np.array(
-        [[np.dot(vertex - vertices[0], u), np.dot(vertex - vertices[0], v)] for vertex in vertices]
+        [
+            [np.dot(vertex - vertices[0], u), np.dot(vertex - vertices[0], v)]
+            for vertex in vertices
+        ]
     )
 
     # Use the Shoelace formula to calculate the area of the polygon in 2D

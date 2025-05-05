@@ -65,7 +65,9 @@ class MicrostructureImage:
                 self.L = [1.0, 1.0, 1.0]  # Default physical dimensions
             self.compute_volume_fractions()
 
-    def read(self, h5_filename: Optional[str] = None, dset_name: Optional[str] = None) -> None:
+    def read(
+        self, h5_filename: Optional[str] = None, dset_name: Optional[str] = None
+    ) -> None:
         """
         Reads the image data and metadata from the specified HDF5 file and dataset.
 
@@ -91,13 +93,13 @@ class MicrostructureImage:
                 self.image = dset[...]
                 # Read metadata
                 self.metadata = {key: value for key, value in dset.attrs.items()}
-                
+
                 # check for permute_order attribute
                 if "permute_order" in dset.attrs:
                     permute_order = dset.attrs["permute_order"]
                 else:
                     permute_order = "zyx"  # Default order
-                    
+
                 if permute_order == "zyx":
                     self.image = self.image.transpose(2, 1, 0)
                 elif permute_order != "xyz":
@@ -167,7 +169,9 @@ class MicrostructureImage:
         with h5py.File(self.h5_filename, "a") as f:
             if self.dset_name in f:
                 del f[self.dset_name]
-                print(f"Dataset {self.dset_name} exists in {self.h5_filename}, overwriting it.")
+                print(
+                    f"Dataset {self.dset_name} exists in {self.h5_filename}, overwriting it."
+                )
             dset = f.create_dataset(
                 self.dset_name,
                 data=permuted_image,
@@ -198,12 +202,15 @@ class MicrostructureImage:
         """
         unique_labels = np.unique(self.image)
         self.volume_fractions = {
-            label: np.sum(self.image == label) / self.image.size for label in unique_labels
+            label: np.sum(self.image == label) / self.image.size
+            for label in unique_labels
         }
 
 
 def main():
-    ms = MicrostructureImage(h5_filename="data/sphere.h5", dset_name="/sphere03628/240x240x240/ms")
+    ms = MicrostructureImage(
+        h5_filename="data/sphere.h5", dset_name="/sphere03628/240x240x240/ms"
+    )
 
     for key in sorted(ms.volume_fractions.keys()):
         value = ms.volume_fractions[key]

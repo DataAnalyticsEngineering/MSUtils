@@ -48,7 +48,9 @@ class PeriodicVoronoiImage(MicrostructureImage):
             )
             self.compute_volume_fractions()
 
-    def _generate_periodic_voronoi(self, N: npt.ArrayLike, L: npt.ArrayLike) -> npt.ArrayLike:
+    def _generate_periodic_voronoi(
+        self, N: npt.ArrayLike, L: npt.ArrayLike
+    ) -> npt.ArrayLike:
         """
         _summary_
 

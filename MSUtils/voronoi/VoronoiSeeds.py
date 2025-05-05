@@ -50,7 +50,9 @@ class VoronoiSeeds:
             self.read_h5(filename, grp_name)
         else:
             if num_crystals is None:
-                raise ValueError("num_crystals must be specified if not reading from file.")
+                raise ValueError(
+                    "num_crystals must be specified if not reading from file."
+                )
             if num_crystals <= 0:
                 raise ValueError("Number of crystals must be positive.")
             if len(RVE_length) not in [2, 3]:
@@ -94,29 +96,37 @@ class VoronoiSeeds:
         # Generate seeds based on method
         match self.method:
             case "random":
-                self.seeds = rng.random((self.num_crystals, dim)) * np.array(self.RVE_length)
+                self.seeds = rng.random((self.num_crystals, dim)) * np.array(
+                    self.RVE_length
+                )
             case "lhs-lloyd":
                 sampler = qmc.LatinHypercube(
                     d=dim, seed=self.BitGeneratorSeed, optimization="lloyd"
                 )
-                self.seeds = sampler.random(n=self.num_crystals) * np.array(self.RVE_length)
+                self.seeds = sampler.random(n=self.num_crystals) * np.array(
+                    self.RVE_length
+                )
             case "halton":
                 sampler = qmc.Halton(d=dim, seed=self.BitGeneratorSeed)
-                self.seeds = sampler.random(n=self.num_crystals) * np.array(self.RVE_length)
+                self.seeds = sampler.random(n=self.num_crystals) * np.array(
+                    self.RVE_length
+                )
             case "sobol":
                 sampler = qmc.Sobol(d=dim, seed=self.BitGeneratorSeed)
-                self.seeds = sampler.random_base2(m=int(np.ceil(np.log2(self.num_crystals))))[
-                    : self.num_crystals
-                ] * np.array(self.RVE_length)
+                self.seeds = sampler.random_base2(
+                    m=int(np.ceil(np.log2(self.num_crystals)))
+                )[: self.num_crystals] * np.array(self.RVE_length)
             case "honeycomb":
                 N = factorize(self.num_crystals, dim)
-                self.seeds = self._generate_lattice(N[0], N[1], N[2], self.RVE_length, stagger=True)
+                self.seeds = self._generate_lattice(
+                    N[0], N[1], N[2], self.RVE_length, stagger=True
+                )
             case "rubiks-cube":
                 N = factorize(self.num_crystals, dim)
                 self.seeds = self._generate_lattice(
                     N[0], N[1], N[2], self.RVE_length, stagger=False
                 )
-            case "diamond": # Diamond-like seed points
+            case "diamond":  # Diamond-like seed points
                 self.num_crystals = 2
                 self.seeds = np.array([[0, 0, 0], [0.5, 0.5, 0.5]])
             case _:
@@ -144,13 +154,15 @@ class VoronoiSeeds:
         R32 = c2 * sP
         R33 = cP
 
-        rot_matrices = np.stack((R11, R12, R13, R21, R22, R23, R31, R32, R33), axis=-1).reshape(
-            self.num_crystals, 3, 3
-        )
+        rot_matrices = np.stack(
+            (R11, R12, R13, R21, R22, R23, R31, R32, R33), axis=-1
+        ).reshape(self.num_crystals, 3, 3)
 
         # Using the rotation matrices, we compute the lattice vectors for each seed
         initial_orientation = np.eye(3)
-        self.lattice_vectors = np.einsum("nij,jk->nik", rot_matrices, initial_orientation)
+        self.lattice_vectors = np.einsum(
+            "nij,jk->nik", rot_matrices, initial_orientation
+        )
 
     def _generate_lattice(
         self, Nx: int, Ny: int, Nz: int, RVE_length: list[float], stagger: bool = True
@@ -188,7 +200,9 @@ class VoronoiSeeds:
                             y += b / 2  # Stagger every other layer in y direction
                             x += a / 2  # Further stagger in x direction
                     # Add the point, ensuring it's within the RVE box
-                    points.append([x % RVE_length[0], y % RVE_length[1], z % RVE_length[2]])
+                    points.append(
+                        [x % RVE_length[0], y % RVE_length[1], z % RVE_length[2]]
+                    )
         return np.array(points)
 
     def write_h5(self, filepath: Path, grp_name: str) -> None:

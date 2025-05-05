@@ -2,10 +2,11 @@ import os
 import h5py
 import argparse
 
+
 def copy_contents(src_group, dst_group, verbose=False, overwrite=True):
     """
     Recursively copy all datasets and groups from src_group into dst_group.
-    
+
     If a dataset already exists at the same path in dst_group:
     - If overwrite=True, the dataset is overwritten.
     - If overwrite=False, the dataset is skipped.
@@ -51,7 +52,10 @@ def copy_contents(src_group, dst_group, verbose=False, overwrite=True):
                 else:
                     # Skip overwriting
                     if verbose:
-                        print(f"Skipping dataset (already exists): {dst_group.name}/{key}")
+                        print(
+                            f"Skipping dataset (already exists): {dst_group.name}/{key}"
+                        )
+
 
 def merge_h5_files(output_file, input_files, verbose=False, overwrite=True):
     """
@@ -73,31 +77,46 @@ def merge_h5_files(output_file, input_files, verbose=False, overwrite=True):
     overwrite : bool, optional
         If True (default), existing datasets are overwritten. If False, they are skipped.
     """
-    mode = 'a' if os.path.exists(output_file) else 'w'
+    mode = "a" if os.path.exists(output_file) else "w"
     with h5py.File(output_file, mode) as h5out:
         for infile in input_files:
             if verbose:
                 print(f"Merging file: {infile}")
-            with h5py.File(infile, 'r') as h5in:
+            with h5py.File(infile, "r") as h5in:
                 copy_contents(h5in, h5out, verbose=verbose, overwrite=overwrite)
 
     if verbose:
         print(f"Merging complete. Output saved at {output_file}")
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Merge multiple HDF5 files into a single output HDF5 file.")
-    parser.add_argument('-o', '--output', required=True,
-                        help='Path to the output HDF5 file.')
-    parser.add_argument('-i', '--inputs', nargs='+', required=True,
-                        help='Input HDF5 files to merge.')
-    parser.add_argument('--verbose', action='store_true',
-                        help='Print detailed information about the merging process.')
-    parser.add_argument('--no-overwrite', action='store_false', dest='overwrite', default=True,
-                        help='If set, existing datasets are not overwritten, but skipped.')
+        description="Merge multiple HDF5 files into a single output HDF5 file."
+    )
+    parser.add_argument(
+        "-o", "--output", required=True, help="Path to the output HDF5 file."
+    )
+    parser.add_argument(
+        "-i", "--inputs", nargs="+", required=True, help="Input HDF5 files to merge."
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed information about the merging process.",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_false",
+        dest="overwrite",
+        default=True,
+        help="If set, existing datasets are not overwritten, but skipped.",
+    )
 
     args = parser.parse_args()
-    merge_h5_files(args.output, args.inputs, verbose=args.verbose, overwrite=args.overwrite)
+    merge_h5_files(
+        args.output, args.inputs, verbose=args.verbose, overwrite=args.overwrite
+    )
+
 
 if __name__ == "__main__":
     main()
@@ -108,4 +127,3 @@ if __name__ == "__main__":
     # verbose = False
     # overwrite = True
     # merge_h5_files(output_file, input_files, verbose=verbose, overwrite=overwrite)
-
