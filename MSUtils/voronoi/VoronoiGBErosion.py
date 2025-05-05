@@ -50,10 +50,9 @@ class PeriodicVoronoiImageErosion:
         crystal_mask_indices = np.array(np.where(crystal_mask)).T
         voxel_coords = (crystal_mask_indices + 0.5) * self.voxel_scale
 
-        # Use the crystal label as a key in the dictionary
-        poly_indices = self.polytrack.get(crystal, [])
-
-        for poly_index in poly_indices:
+  
+        for (poly_index, side_flag) in self.polytrack.get(crystal, []):
+            delaunay = self.polylist_A[poly_index] if side_flag==0 else self.polylist_B[poly_index]
             # Identify normal
             ridge_pts = self.polyinfo[poly_index]  # Seed indices
             diff = (
@@ -65,7 +64,6 @@ class PeriodicVoronoiImageErosion:
                 continue  # Avoid division by zero
             normal = diff / norm
 
-            delaunay = self.polylist[poly_index]
             points = delaunay.points
 
             # Bounding box filtering
@@ -95,7 +93,7 @@ class PeriodicVoronoiImageErosion:
             ###
             # Define ridge (shifted to origin)
             # IMPORTANT: Last TWO components of points are crystal seeds used for the construction of the polyhedron (DO NOT CONSIDER!)
-            polygon = points[:-2] - points[0][None,:]
+            polygon = points[:-1] - points[0][None,:]
             polygon_rolled = np.roll(polygon, -1, axis=0)
             edges = (polygon_rolled - polygon)[np.newaxis, :, :]
 
@@ -156,11 +154,8 @@ class PeriodicVoronoiImageErosion:
             # Initialize a boolean array to keep track of checked voxels
             voxel_checked = np.full(len(voxel_coords), False, dtype=bool)
 
-            # Use the crystal label as a key in the dictionary
-            poly_indices = self.polytrack.get(crystal, [])
-
-            for poly_index in poly_indices:
-                delaunay = self.polylist[poly_index]
+            for (poly_index, side_flag) in self.polytrack.get(crystal, []):
+                delaunay = self.polylist_A[poly_index] if side_flag==0 else self.polylist_B[poly_index]
                 points = delaunay.points
 
                 # Bounding box filtering
@@ -232,8 +227,9 @@ class PeriodicVoronoiImageErosion:
             self.normal_array = np.empty((0, 3), dtype=float)
 
     def _precompute_polyhedrons(self, voroTess: VoronoiTessellation) -> None:
-        self.polylist = []
-        self.polyinfo = []
+        self.polylist_A = []   # ridge + seed_i
+        self.polylist_B = []   # ridge + seed_j
+        self.polyinfo   = []
         self.polytrack = defaultdict(list)
 
         for _i, (ridge, ridge_pts) in enumerate(
@@ -247,17 +243,21 @@ class PeriodicVoronoiImageErosion:
                 # Skip infinite ridges
                 continue
 
-            points = np.vstack(
-                (voroTess.voronoi.vertices[ridge], voroTess.voronoi.points[ridge_pts])
-            )
-            delaunay = Delaunay(points)
-            self.polylist.append(delaunay)
+            verts = voroTess.voronoi.vertices[ridge]       # k×3
+            seed_i, seed_j = voroTess.voronoi.points[ridge_pts]
+
+            poly_i = Delaunay(np.vstack((verts, seed_i)))  # half-space toward i
+            poly_j = Delaunay(np.vstack((verts, seed_j)))  # half-space toward j
+
+            idx = len(self.polylist_A)
+            self.polylist_A.append(poly_i)
+            self.polylist_B.append(poly_j)
             self.polyinfo.append(ridge_pts)
 
             # Update polytrack with the correct index
             for pt_idx in ridge_pts:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
-                self.polytrack[crystal_label].append(len(self.polylist) - 1)
+                self.polytrack[crystal_label].append((idx, 0 if pt_idx==ridge_pts[0] else 1))
 
     def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx") -> None:
         """
