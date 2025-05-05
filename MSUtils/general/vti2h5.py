@@ -78,9 +78,9 @@ def multi_vti_to_h5(vti_files, h5_file_path, grp_name="images", data_field=None,
                 
                 # Store metadata
                 images_group[dset_name].attrs.update({
-                    'dimensions': mesh.dimensions,
-                    'spacing': mesh.spacing,
-                    'origin': mesh.origin,
+                    'mesh_dimensions': mesh.dimensions,
+                    'mesh_spacing': mesh.spacing,
+                    'mesh_origin': mesh.origin,
                     'source_file': os.path.basename(vti_file),
                     'data_field': field_name
                 })
