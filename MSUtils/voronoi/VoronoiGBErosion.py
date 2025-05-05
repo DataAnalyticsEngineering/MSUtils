@@ -44,42 +44,11 @@ class PeriodicVoronoiImageErosion:
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
 
-    def _batch_points_in_convex_polygon(self, polygon, points):
-        A = polygon
-        B = np.roll(polygon, -1, axis=0)
-        edges = B - A          # shape (N, 2)
-
-        # Reshape points for broadcasting
-        P = points[:, np.newaxis, :]  # shape (M, 1, 2)
-        A = A[np.newaxis, :, :]       # shape (1, N, 2)
-        E = edges[np.newaxis, :, :]   # shape (1, N, 2)
-
-        # Vector from A to each point
-        AP = P - A                    # shape (M, N, 2)
-
-        # Cross product for each point with each edge
-        cross = np.cross(E, AP, axis=-1)
-        ref = cross[:,0:1,:]
-
-        # Check whether they all have same direction
-        same_direction_mask = np.sum(cross * ref, axis=-1)
-
-        # For each point, check if all cross products have same sign
-        all_positive = np.all(same_direction_mask >= 0, axis=1)
-        all_negative = np.all(same_direction_mask <= 0, axis=1)
-
-        return np.logical_or(all_positive, all_negative)
-
     def _periodic_thickness_consistent_erosion(self, crystal) -> npt.ArrayLike:
-
-        # Check if crystal touches itself (crystal is its own neighbor, requires additional tests below)
-        self_touching = crystal in self.voroTess.neighbors[crystal]
 
         crystal_mask = (self.image == crystal)
         crystal_mask_indices = np.array(np.where(crystal_mask)).T
         voxel_coords = (crystal_mask_indices + 0.5) * self.voxel_scale
-
-        eroded_mask = crystal_mask.copy()
 
         # Use the crystal label as a key in the dictionary
         poly_indices = self.polytrack.get(crystal, [])
@@ -111,15 +80,42 @@ class PeriodicVoronoiImageErosion:
             if candidate_voxel_coords.size == 0:
                 continue  # Skip if no candidate voxels
 
+            #################################
             # Identify grain boundary voxels
-            # Keep all voxels that have less than extrusion factor distance to interface plane (projection onto normal vector)
+            ###
+            # STEP 1: Keep all voxels where the distance to interface plane is not larger than extrusion factor (projection onto normal vector)
+            ###
             inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) <= self.extrusion_factor)
-            # Keep all voxels where the in-plane projection lies within the GB segment
-            inside &= self._batch_points_in_convex_polygon(points[:-2] - points[0][None,:], ((candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))))
-            
-            if self_touching:
-                # Keep all crystal voxels where projection onto the facet plane ALSO lies within the facet
-                inside &= delaunay.find_simplex(points[0][None,:] + (candidate_voxel_coords - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))) >= 0
+
+            ###
+            # STEP 2: Keep all voxels where the in-plane projection lies within the ridge (2D polygon), i.e. voxel is 'above'  or 'below the ridge area
+            # Idea: when walking along the edges of the ridge a point always needs to be on the same side of yours to be inside of the polygon
+            # ===> if the cross products of the candidate voxel (wrt to ridge points) with each edge of the ridge are all of same sign,
+            # the voxel should be kept
+            ###
+            # Define ridge (shifted to origin)
+            # IMPORTANT: Last TWO components of points are crystal seeds used for the construction of the polyhedron (DO NOT CONSIDER!)
+            polygon = points[:-2] - points[0][None,:]
+            polygon_rolled = np.roll(polygon, -1, axis=0)
+            edges = (polygon_rolled - polygon)[np.newaxis, :, :]
+
+            # Project points onto ridge plane: ONLY CONSIDER VOXELS THAT HAVE BEEN IDENTIFIED IN STEP 1 TO SAVE TIME!
+            coord_projections = (candidate_voxel_coords[inside] - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))
+            # Vector from ridge vertices to each voxel position to be checked
+            coord_vectors = coord_projections[:, np.newaxis, :] - polygon[None, :, :]
+
+            # Cross product for each point with each edge
+            cross = np.cross(edges, coord_vectors, axis=-1)
+
+            # Check whether they all have same direction by checking dot products of the cross products
+            ref = cross[:,0:1,:]
+            same_direction = np.sum(cross * ref, axis=-1)
+            all_positive = np.all(same_direction >= 0, axis=1)
+            all_negative = np.all(same_direction <= 0, axis=1)
+
+            inside[inside] &= np.logical_or(all_positive, all_negative)
+
+            #################################
 
             if not np.any(inside):
                 continue  # Skip if no inside voxels
@@ -127,9 +123,9 @@ class PeriodicVoronoiImageErosion:
             inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
             inside_indices = crystal_mask_indices[inside_indices_in_voxel_coords]
 
-            eroded_mask[*inside_indices.T] = 0
+            crystal_mask[*inside_indices.T] = 0
 
-        return eroded_mask
+        return crystal_mask
 
     def _shrink_and_analyze(self) -> None:
         unique_crystals = np.unique(self.image)
