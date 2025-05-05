@@ -29,7 +29,9 @@ def resize_image(
     if scale is not None:
         new_shape = np.multiply(data_array.shape, scale)
     elif target_resolution is not None:
-        scale = np.ceil(np.array(target_resolution) / np.array(data_array.shape)).astype(int)
+        scale = np.ceil(
+            np.array(target_resolution) / np.array(data_array.shape)
+        ).astype(int)
         new_shape = target_resolution
     else:
         scale = [2, 2, 2]
@@ -47,7 +49,9 @@ def resize_image(
                 resized_image, footprint=footprint, mode="wrap"
             )
         else:
-            kernel_size = [2 * s for s in scale]  # Default kernel size is twice the scale factor
+            kernel_size = [
+                2 * s for s in scale
+            ]  # Default kernel size is twice the scale factor
             resized_image = scipy.ndimage.median_filter(
                 resized_image, size=kernel_size, mode="wrap"
             )
@@ -58,7 +62,9 @@ def resize_image(
 def main():
     from MSUtils.general.MicrostructureImage import MicrostructureImage
 
-    ms = MicrostructureImage(h5_filename="data/sphere.h5", dset_name="/sphere03628/240x240x240/ms")
+    ms = MicrostructureImage(
+        h5_filename="data/sphere.h5", dset_name="/sphere03628/240x240x240/ms"
+    )
     ms_resized = MicrostructureImage(
         image=resize_image(ms.image, target_resolution=[256, 256, 256])
     )
@@ -66,7 +72,11 @@ def main():
 
     error = {}
     for key in ms.volume_fractions.keys():
-        error[key] = (ms.volume_fractions[key] - ms_resized.volume_fractions[key])* 100/ ms.volume_fractions[key]
+        error[key] = (
+            (ms.volume_fractions[key] - ms_resized.volume_fractions[key])
+            * 100
+            / ms.volume_fractions[key]
+        )
         print(f"Resizing volume fraction error for phase {key}: {error[key]:.6f}%")
 
 

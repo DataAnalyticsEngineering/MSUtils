@@ -9,6 +9,7 @@ from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
 
+
 class PeriodicVoronoiImageErosion:
     def __init__(
         self,
@@ -29,7 +30,9 @@ class PeriodicVoronoiImageErosion:
         """
         self.image = voroImg.image
         self.seeds = voroTess.seeds
-        self.extrusion_factor = interface_thickness / 2    # Extrusion factor in both directions of the plane
+        self.extrusion_factor = (
+            interface_thickness / 2
+        )  # Extrusion factor in both directions of the plane
         self.L = np.array(voroImg.L)
         self.eroded_image = None
         self.N = np.array(voroImg.resolution)
@@ -45,14 +48,16 @@ class PeriodicVoronoiImageErosion:
         self._shrink_and_analyze()
 
     def _periodic_thickness_consistent_erosion(self, crystal) -> npt.ArrayLike:
-
-        crystal_mask = (self.image == crystal)
+        crystal_mask = self.image == crystal
         crystal_mask_indices = np.array(np.where(crystal_mask)).T
         voxel_coords = (crystal_mask_indices + 0.5) * self.voxel_scale
 
-  
-        for (poly_index, side_flag) in self.polytrack.get(crystal, []):
-            delaunay = self.polylist_A[poly_index] if side_flag==0 else self.polylist_B[poly_index]
+        for poly_index, side_flag in self.polytrack.get(crystal, []):
+            delaunay = (
+                self.polylist_A[poly_index]
+                if side_flag == 0
+                else self.polylist_B[poly_index]
+            )
             # Identify normal
             ridge_pts = self.polyinfo[poly_index]  # Seed indices
             diff = (
@@ -83,7 +88,10 @@ class PeriodicVoronoiImageErosion:
             ###
             # STEP 1: Keep all voxels where the distance to interface plane is not larger than extrusion factor (projection onto normal vector)
             ###
-            inside = (np.abs((candidate_voxel_coords - points[0][None,:]) @ normal) <= self.extrusion_factor)
+            inside = (
+                np.abs((candidate_voxel_coords - points[0][None, :]) @ normal)
+                <= self.extrusion_factor
+            )
 
             ###
             # STEP 2: Keep all voxels where the in-plane projection lies within the ridge (2D polygon), i.e. voxel is 'above'  or 'below the ridge area
@@ -93,12 +101,14 @@ class PeriodicVoronoiImageErosion:
             ###
             # Define ridge (shifted to origin)
             # IMPORTANT: Last TWO components of points are crystal seeds used for the construction of the polyhedron (DO NOT CONSIDER!)
-            polygon = points[:-1] - points[0][None,:]
+            polygon = points[:-1] - points[0][None, :]
             polygon_rolled = np.roll(polygon, -1, axis=0)
             edges = (polygon_rolled - polygon)[np.newaxis, :, :]
 
             # Project points onto ridge plane: ONLY CONSIDER VOXELS THAT HAVE BEEN IDENTIFIED IN STEP 1 TO SAVE TIME!
-            coord_projections = (candidate_voxel_coords[inside] - points[0][None,:]) @ (np.eye(3,3) - np.outer(normal,normal))
+            coord_projections = (
+                candidate_voxel_coords[inside] - points[0][None, :]
+            ) @ (np.eye(3, 3) - np.outer(normal, normal))
             # Vector from ridge vertices to each voxel position to be checked
             coord_vectors = coord_projections[:, np.newaxis, :] - polygon[None, :, :]
 
@@ -106,7 +116,7 @@ class PeriodicVoronoiImageErosion:
             cross = np.cross(edges, coord_vectors, axis=-1)
 
             # Check whether they all have same direction by checking dot products of the cross products
-            ref = cross[:,0:1,:]
+            ref = cross[:, 0:1, :]
             same_direction = np.sum(cross * ref, axis=-1)
             all_positive = np.all(same_direction >= 0, axis=1)
             all_negative = np.all(same_direction <= 0, axis=1)
@@ -145,8 +155,12 @@ class PeriodicVoronoiImageErosion:
             eroded_mask = self._periodic_thickness_consistent_erosion(crystal)
 
             boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
-            boundary_mask_indices = np.array(np.where(boundary_mask)).T  # Shape: (num_voxels, 3)
-            voxel_coords = (boundary_mask_indices + 0.5) * self.voxel_scale  # Shape: (num_voxels, 3)
+            boundary_mask_indices = np.array(
+                np.where(boundary_mask)
+            ).T  # Shape: (num_voxels, 3)
+            voxel_coords = (
+                boundary_mask_indices + 0.5
+            ) * self.voxel_scale  # Shape: (num_voxels, 3)
 
             if boundary_mask_indices.size == 0:
                 continue  # Skip if no boundary voxels
@@ -154,8 +168,12 @@ class PeriodicVoronoiImageErosion:
             # Initialize a boolean array to keep track of checked voxels
             voxel_checked = np.full(len(voxel_coords), False, dtype=bool)
 
-            for (poly_index, side_flag) in self.polytrack.get(crystal, []):
-                delaunay = self.polylist_A[poly_index] if side_flag==0 else self.polylist_B[poly_index]
+            for poly_index, side_flag in self.polytrack.get(crystal, []):
+                delaunay = (
+                    self.polylist_A[poly_index]
+                    if side_flag == 0
+                    else self.polylist_B[poly_index]
+                )
                 points = delaunay.points
 
                 # Bounding box filtering
@@ -177,7 +195,9 @@ class PeriodicVoronoiImageErosion:
                 if not np.any(inside):
                     continue  # Skip if no inside voxels
 
-                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
+                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[
+                    inside
+                ]
                 inside_indices = boundary_mask_indices[inside_indices_in_voxel_coords]
 
                 # Compute element indices
@@ -194,7 +214,9 @@ class PeriodicVoronoiImageErosion:
                 normal = diff / norm
 
                 # Map extended seed indices to original seed indices (crystal labels)
-                materials = [self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts]
+                materials = [
+                    self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts
+                ]
 
                 num_voxels = inside_indices.shape[0]
                 coords_list.append(inside_indices)
@@ -227,9 +249,9 @@ class PeriodicVoronoiImageErosion:
             self.normal_array = np.empty((0, 3), dtype=float)
 
     def _precompute_polyhedrons(self, voroTess: VoronoiTessellation) -> None:
-        self.polylist_A = []   # ridge + seed_i
-        self.polylist_B = []   # ridge + seed_j
-        self.polyinfo   = []
+        self.polylist_A = []  # ridge + seed_i
+        self.polylist_B = []  # ridge + seed_j
+        self.polyinfo = []
         self.polytrack = defaultdict(list)
 
         for _i, (ridge, ridge_pts) in enumerate(
@@ -243,7 +265,7 @@ class PeriodicVoronoiImageErosion:
                 # Skip infinite ridges
                 continue
 
-            verts = voroTess.voronoi.vertices[ridge]       # k×3
+            verts = voroTess.voronoi.vertices[ridge]  # k×3
             seed_i, seed_j = voroTess.voronoi.points[ridge_pts]
 
             poly_i = Delaunay(np.vstack((verts, seed_i)))  # half-space toward i
@@ -257,7 +279,9 @@ class PeriodicVoronoiImageErosion:
             # Update polytrack with the correct index
             for pt_idx in ridge_pts:
                 crystal_label = self.voroTess.crystal_index_map[pt_idx]
-                self.polytrack[crystal_label].append((idx, 0 if pt_idx==ridge_pts[0] else 1))
+                self.polytrack[crystal_label].append(
+                    (idx, 0 if pt_idx == ridge_pts[0] else 1)
+                )
 
     def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx") -> None:
         """
@@ -317,7 +341,7 @@ class PeriodicVoronoiImageErosion:
                 # Image is in order of z, y, x
                 # Vector field is in order of x, y, z
                 #################################
-                permuted_eroded_image = self.eroded_image.transpose(2, 1, 0) 
+                permuted_eroded_image = self.eroded_image.transpose(2, 1, 0)
 
                 permuted_voxel_info_array = voxel_info_array.copy()
                 permuted_voxel_info_array["coords"] = voxel_info_array["coords"]
@@ -338,9 +362,11 @@ class PeriodicVoronoiImageErosion:
                 compression_opts=compression_opts,
             )
             image_dataset.attrs["permute_order"] = order
-            image_dataset.attrs["interface_thickness"] = self.extrusion_factor*2
+            image_dataset.attrs["interface_thickness"] = self.extrusion_factor * 2
             image_dataset.attrs["L"] = self.L
-            image_dataset.attrs.create("VoronoiSeeds_xyz", np.array(self.seeds, dtype=np.float64))
+            image_dataset.attrs.create(
+                "VoronoiSeeds_xyz", np.array(self.seeds, dtype=np.float64)
+            )
 
             # Save GBVoxelInfo to .h5 file
             if "GBVoxelInfo" in grp:
