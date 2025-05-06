@@ -1,9 +1,11 @@
 [project]
 name = "MSUtils"
-version = "0.1.1"
-description = "Add a short description here"
+version = "0.1.0"
+description = "Microstructure Utilities by DAE University of Stuttgart"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
-requires-python = ">= 3.11"
+
+[dependencies]
+python = ">=3.13.3,<3.14"
 
 [build-system]
 requires = ["hatchling"]
@@ -24,25 +26,23 @@ MSUtils = { path = ".", editable = true }
 pyrecest = {git = "https://github.com/FlorianPfaff/pyRecEst.git"}
 
 [tool.pixi.tasks]
-voronoi = "python MSUtils/voronoi/main.py"
 
 
 [tool.pixi.dependencies]
-numpy = ">=2.0.1,<3"
-h5py = ">=3.11.0,<4"
-scipy = ">=1.14.0,<2"
-matplotlib = ">=3.9.1,<4"
-scikit-image = ">=0.24.0,<0.25"
-vtk = ">=9.3.1,<10"
-plotly = ">=5.23.0,<6"
-lxml = ">=5.2.2,<6"
-sympy = ">=1.9.0,<2"
-jupyter = ">=1.1.1,<2"
-pre-commit = ">=4.0.1,<5"
-pytorch-cpu = ">=2.5.1,<3"
-quaternion = ">=2024.0.7,<2025"
-beartype = ">=0.19.0,<0.20"
-pyvista = ">=0.44.2,<0.45"
+numpy = ">=2.2.5,<3"
+h5py = ">=3.13.0,<4"
+scipy = ">=1.15.2,<2"
+matplotlib = ">=3.10.1,<4"
+scikit-image = ">=0.25.2,<0.26"
+lxml = ">=5.4.0,<6"
+plotly = ">=6.0.1,<7"
+sympy = ">=1.14.0,<2"
+ipykernel = ">=6.29.5,<7"
+nbclient = ">=0.10.2,<0.11"
+pre-commit = ">=4.2.0,<5"
+quaternion = ">=2024.0.8,<2025"
+beartype = ">=0.20.2,<0.21"
+pyvista = "*"
 
 [tool.pixi.feature.build.dependencies]
 twine = "*"
@@ -63,15 +63,7 @@ push_docs = "powershell docs/scripts/update_docs_by_hand.ps1"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest --junitxml=coverage/junit/test-results.xml --cov=MSUtils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html ; mkdir -p docs/_static/ && cp -r coverage/html/ docs/_static/test_cov/"
-lint = "ruff check"
-lint_fix = "ruff check --fix"
-lint_gh = "ruff check --output-format=github"
-lint_docs_gh = "ruff check --select D,D401 --ignore D417 --output-format=github"
-format = "ruff format"
-format_diff = "ruff format --diff"
-typecheck = "mypy MSUtils"
 pre-commit-all = "pre-commit run --all-files"
-pre-commit-install = "pre-commit install"
 
 [tool.pixi.feature.docs.dependencies]
 sphinx = "*"
@@ -82,53 +74,8 @@ nbsphinx = "*"
 [tool.pixi.feature.test.dependencies]
 pytest = ">=7.0.0,<8"
 pytest-cov = "*"
-ruff = "*"
-mypy = ">=1.11.2,<2"
 
 [tool.pixi.environments]
-build = {features = ["build"]}
 default = {features = [], solve-group = "default"}
+build = {features = ["build"]}
 utility = {features = ["test","docs"], solve-group = "default"}
-
-[tool.ruff.lint]
-select = [
-    # Aparently, standard:
-    "E4",
-    "E7",
-    "E9",
-    "F",
-    # # pycodestyle
-    "E",
-    # # Pyflakes
-    "F",
-    # # pyupgrade
-    # "UP",
-    # # flake8-bugbear
-    "B",
-    # # flake8-simplify
-    "SIM",
-    # # isort
-    "I",
-    # # Setting for docstrings, explicit in task lint_docs_gh
-    # # Pydocstyle
-    # "D",
-    # # Augment the convention by requiring an imperative mood for all docstrings.
-    # "D401",
-]
-
-ignore = [
-    # Relax the convention by _not_ requiring documentation for every function parameter.
-    "D417",
-    # Ignore Line to long stuff
-    "E501",
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-exclude = []
-ignore_missing_imports = true
