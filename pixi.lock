@@ -10053,7 +10053,7 @@ packages:
 - pypi: .
   name: msutils
   version: 0.1.0
-  sha256: e0233392a7a8f3ca9f6de80f882dffd14e6109b14d14550990ffda17f9f3efef
+  sha256: 564d5cb823a6450ec76b0ca9a4d264b0d30e35068ba73eb1eb7991f201a452dd
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/multidict-6.4.3-py312h178313f_0.conda
   sha256: 399b1d06cc7e510455e4b5d2d6d7b565c2c203afb63fd050234f7d7ffdd01b18
