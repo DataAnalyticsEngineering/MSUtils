@@ -42,7 +42,7 @@ nbclient = ">=0.10.2,<0.11"
 pre-commit = ">=4.2.0,<5"
 quaternion = ">=2024.0.8,<2025"
 beartype = ">=0.20.2,<0.21"
-pyvista = "*"
+pyvista = ">=0.45.0,<0.46"
 
 [tool.pixi.feature.build.dependencies]
 twine = "*"
