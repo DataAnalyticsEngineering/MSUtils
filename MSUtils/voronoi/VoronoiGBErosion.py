@@ -8,6 +8,7 @@ import numpy.typing as npt
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
+import json
 
 
 class PeriodicVoronoiImageErosion:
@@ -267,17 +268,17 @@ class PeriodicVoronoiImageErosion:
             compression_opts = 6
 
             # Define dtype for the ridge metadata to include ridge tag
-            ridge_metadata_dtype = np.dtype(
+            GBVoxelInfo_dtype = np.dtype(
                 [
-                    ("ridge_tag", "i8"),
-                    ("normal", "f8", (3,)),
+                    ("GB_tag", "i8"),
+                    ("GB_normal", "f8", (3,)),
                     ("crystalA", "i8"),
                     ("crystalB", "i8"),
                 ]
             )
             # Convert ridge_metadata dictionary to structured array
             ridge_tags = sorted(self.ridge_metadata.keys())
-            ridge_metadata = np.array(
+            GBVoxelInfo = np.array(
                 [
                     (
                         tag,
@@ -287,7 +288,7 @@ class PeriodicVoronoiImageErosion:
                     )
                     for tag in ridge_tags
                 ],
-                dtype=ridge_metadata_dtype,
+                dtype=GBVoxelInfo_dtype,
             )
 
             # Create a new field for normals, taking shape from the original image
@@ -332,14 +333,26 @@ class PeriodicVoronoiImageErosion:
             image_dataset.attrs.create(
                 "VoronoiSeeds_xyz", np.array(self.seeds, dtype=np.float64)
             )
+            # Create GBVoxelInfo attribute with ridge_tag and normal information as key-value pairs
+            gb_voxel_info = {}
+            for tag in sorted(self.ridge_metadata.keys()):
+                normal, _, _ = self.ridge_metadata[tag]
+                gb_voxel_info[str(tag)] = {
+                    "GB_tag": int(tag),
+                    "GB_normal": normal.tolist()
+                }
+            # Store as string attribute (JSON format)
+            image_dataset.attrs["GBVoxelInfo"] = json.dumps(gb_voxel_info)
+            image_dataset.attrs["num_crystals"] = self.num_crystals
+            image_dataset.attrs["num_GB"] = len(self.ridge_metadata)
 
             # Save ridge metadata to .h5 file
-            if "ridge_metadata" in grp:
-                del grp["ridge_metadata"]
-                print("Overwriting existing 'ridge_metadata' dataset.")
-            ridge_dataset = grp.create_dataset(
-                "ridge_metadata",
-                data=ridge_metadata,
+            if "GBVoxelInfo" in grp:
+                del grp["GBVoxelInfo"]
+                print("Overwriting existing 'GBVoxelInfo' dataset.")
+            grp.create_dataset(
+                "GBVoxelInfo",
+                data=GBVoxelInfo,
                 compression="gzip",
                 compression_opts=compression_opts,
             )
