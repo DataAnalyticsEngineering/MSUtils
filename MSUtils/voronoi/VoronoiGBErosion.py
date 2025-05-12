@@ -194,6 +194,24 @@ class PeriodicVoronoiImageErosion:
             # crystal interior stays labelled with the crystal index
             eroded_image[(crystal_mask & interior_mask)] = crystal
 
+        # ----------------------------------------------------------------------
+        # Renumber ridge tags so they are contiguous: N, N+1, N+2, ...
+        # ----------------------------------------------------------------------
+        active_tags = sorted(t for t in self.ridge_metadata.keys())
+        mapping     = {old: self.num_crystals + i for i, old in enumerate(active_tags)}
+
+        if active_tags:                                # nothing to do for pure bulk
+            # 1) remap eroded_image in-place  (vectorised boolean mask per tag)
+            for old, new in mapping.items():
+                if old == new:
+                    continue
+                eroded_image[eroded_image == old] = new
+
+            # 2) rebuild ridge_metadata with new keys
+            self.ridge_metadata = {
+                mapping[old]: value for old, value in self.ridge_metadata.items()
+            }
+        # ----------------------------------------------------------------------
         self.eroded_image = eroded_image
 
     def _precompute_polyhedrons(self, voroTess: VoronoiTessellation) -> None:
