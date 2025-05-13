@@ -272,7 +272,7 @@ class PeriodicVoronoiImageErosion:
             self.polytrack[cA].append((idx, 0))  # hull A faces cA
             self.polytrack[cB].append((idx, 1))  # hull B faces cB)
 
-    def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx") -> None:
+    def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx", save_normals: bool = False) -> None:
         """
         Write this eroded periodic voronoi image into a h5-file.
 
@@ -280,6 +280,7 @@ class PeriodicVoronoiImageErosion:
             filepath (Path): Path to h5 file.
             grp_name (str): Name of h5py group.
             order (str, optional): Either one of 'xyz' or 'zyx'. Defaults to "zyx".
+            save_normals (bool, optional): Whether to save the normals field. Defaults to False.
         """
         with h5py.File(filepath, "a") as h5_file:
             grp = h5_file.require_group(grp_name)
@@ -309,30 +310,11 @@ class PeriodicVoronoiImageErosion:
                 dtype=GBVoxelInfo_dtype,
             )
 
-            # Create a new field for normals, taking shape from the original image
-            Nx, Ny, Nz = self.eroded_image.shape
-            normals_field = np.zeros((Nx, Ny, Nz, 3))
-            for i, j, k in np.ndindex(self.eroded_image.shape):
-                mat_index = self.eroded_image[i, j, k]
-                if mat_index >= self.num_crystals:
-                    normal, _, _ = self.ridge_metadata[mat_index]
-                    normals_field[i, j, k] = normal
-
-            # Optionally permute the eroded_image before saving, based on the order parameter
+            # Prepare permutated eroded image
             if order == "xyz":
-                #################################
-                # Image is in order of x, y, z
-                # Vector field is in order of x, y, z
-                #################################
                 permuted_eroded_image = self.eroded_image
-                permuted_normals_field = normals_field
             elif order == "zyx":
-                #################################
-                # Image is in order of z, y, x
-                # Vector field is in order of x, y, z
-                #################################
                 permuted_eroded_image = self.eroded_image.transpose(2, 1, 0)
-                permuted_normals_field = normals_field.transpose(2, 1, 0, 3)
 
             # Save eroded image to .h5 file
             if "eroded_image" in grp:
@@ -375,15 +357,32 @@ class PeriodicVoronoiImageErosion:
                 compression_opts=compression_opts,
             )
 
-            # Save normals to .h5 file
-            if "normals" in grp:
-                del grp["normals"]
-                print("Overwriting existing 'normals' dataset.")
-            normals_dataset = grp.create_dataset(
-                "normals",
-                data=permuted_normals_field,
-                dtype="f8",
-                compression="gzip",
-                compression_opts=compression_opts,
-            )
-            normals_dataset.attrs["permute_order"] = order
+            # Only save normals if explicitly requested
+            if save_normals:
+                # Create a new field for normals, taking shape from the original image
+                Nx, Ny, Nz = self.eroded_image.shape
+                normals_field = np.zeros((Nx, Ny, Nz, 3))
+                for i, j, k in np.ndindex(self.eroded_image.shape):
+                    mat_index = self.eroded_image[i, j, k]
+                    if mat_index >= self.num_crystals:
+                        normal, _, _ = self.ridge_metadata[mat_index]
+                        normals_field[i, j, k] = normal
+                
+                # Apply permutation to normals field if needed
+                if order == "xyz":
+                    permuted_normals_field = normals_field
+                elif order == "zyx":
+                    permuted_normals_field = normals_field.transpose(2, 1, 0, 3)
+
+                # Save normals to .h5 file
+                if "normals" in grp:
+                    del grp["normals"]
+                    print("Overwriting existing 'normals' dataset.")
+                normals_dataset = grp.create_dataset(
+                    "normals",
+                    data=permuted_normals_field,
+                    dtype="f8",
+                    compression="gzip",
+                    compression_opts=compression_opts,
+                )
+                normals_dataset.attrs["permute_order"] = order
