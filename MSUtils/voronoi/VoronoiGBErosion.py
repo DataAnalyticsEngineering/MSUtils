@@ -198,9 +198,9 @@ class PeriodicVoronoiImageErosion:
         # Renumber ridge tags so they are contiguous: N, N+1, N+2, ...
         # ----------------------------------------------------------------------
         active_tags = sorted(t for t in self.ridge_metadata.keys())
-        mapping     = {old: self.num_crystals + i for i, old in enumerate(active_tags)}
+        mapping = {old: self.num_crystals + i for i, old in enumerate(active_tags)}
 
-        if active_tags:                                # nothing to do for pure bulk
+        if active_tags:  # nothing to do for pure bulk
             # 1) remap eroded_image in-place  (vectorised boolean mask per tag)
             for old, new in mapping.items():
                 if old == new:
@@ -272,7 +272,13 @@ class PeriodicVoronoiImageErosion:
             self.polytrack[cA].append((idx, 0))  # hull A faces cA
             self.polytrack[cB].append((idx, 1))  # hull B faces cB)
 
-    def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx", save_normals: bool = False) -> None:
+    def write_h5(
+        self,
+        filepath: Path,
+        grp_name: str,
+        order: str = "zyx",
+        save_normals: bool = False,
+    ) -> None:
         """
         Write this eroded periodic voronoi image into a h5-file.
 
@@ -339,7 +345,7 @@ class PeriodicVoronoiImageErosion:
                 normal, _, _ = self.ridge_metadata[tag]
                 gb_voxel_info[str(tag)] = {
                     "GB_tag": int(tag),
-                    "GB_normal": normal.tolist()
+                    "GB_normal": normal.tolist(),
                 }
             # Store as string attribute (JSON format)
             image_dataset.attrs["GBVoxelInfo"] = json.dumps(gb_voxel_info)
@@ -367,7 +373,7 @@ class PeriodicVoronoiImageErosion:
                     if mat_index >= self.num_crystals:
                         normal, _, _ = self.ridge_metadata[mat_index]
                         normals_field[i, j, k] = normal
-                
+
                 # Apply permutation to normals field if needed
                 if order == "xyz":
                     permuted_normals_field = normals_field

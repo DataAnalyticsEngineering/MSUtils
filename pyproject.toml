@@ -32,7 +32,7 @@ pyrecest = {git = "https://github.com/FlorianPfaff/pyRecEst.git"}
 numpy = ">=2.2.5,<3"
 h5py = ">=3.13.0,<4"
 scipy = ">=1.15.2,<2"
-matplotlib = ">=3.10.1,<4"
+matplotlib = ">=3.10.3,<4"
 scikit-image = ">=0.25.2,<0.26"
 lxml = ">=5.4.0,<6"
 plotly = ">=6.0.1,<7"
@@ -42,7 +42,7 @@ nbclient = ">=0.10.2,<0.11"
 pre-commit = ">=4.2.0,<5"
 quaternion = ">=2024.0.8,<2025"
 beartype = ">=0.20.2,<0.21"
-pyvista = ">=0.45.0,<0.46"
+pyvista = ">=0.45.2,<0.46"
 
 [tool.pixi.feature.build.dependencies]
 twine = "*"
