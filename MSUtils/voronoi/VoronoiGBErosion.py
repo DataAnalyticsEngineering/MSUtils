@@ -8,6 +8,7 @@ import numpy.typing as npt
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
+import json
 
 
 class PeriodicVoronoiImageErosion:
@@ -38,19 +39,21 @@ class PeriodicVoronoiImageErosion:
         self.N = np.array(voroImg.resolution)
         self.voroTess = voroTess
 
-        # Initialize arrays to store grain boundary information
-        self.coords_array = None
-        self.elem_xyz_array = None
-        self.materials_array = None
-        self.normal_array = None
+        self.num_crystals = len(np.unique(self.image))
+        self.ridge_metadata = {}  # tag  →  (normal, ia, ib)
 
         self._precompute_polyhedrons(voroTess)
         self._shrink_and_analyze()
 
     def _periodic_thickness_consistent_erosion(self, crystal) -> npt.ArrayLike:
+        """
+        Returns a Boolean mask the same shape as self.image:
+        - True  → voxel still belongs to `crystal` after erosion
+        - False → voxel was removed (belongs to a grain boundary)
+        """
         crystal_mask = self.image == crystal
-        crystal_mask_indices = np.array(np.where(crystal_mask)).T
-        voxel_coords = (crystal_mask_indices + 0.5) * self.voxel_scale
+        crystal_idx = np.array(np.where(crystal_mask)).T
+        voxel_coords = (crystal_idx + 0.5) * self.voxel_scale
 
         for poly_index, side_flag in self.polytrack.get(crystal, []):
             delaunay = (
@@ -58,232 +61,224 @@ class PeriodicVoronoiImageErosion:
                 if side_flag == 0
                 else self.polylist_B[poly_index]
             )
-            # Identify normal
-            ridge_pts = self.polyinfo[poly_index]  # Seed indices
+
+            # outward-pointing normal for this crystal
+            i_idx, j_idx = self.polyinfo[poly_index]
             diff = (
-                self.voroTess.voronoi.points[ridge_pts[1]]
-                - self.voroTess.voronoi.points[ridge_pts[0]]
+                self.voroTess.voronoi.points[j_idx]
+                - self.voroTess.voronoi.points[i_idx]
             )
-            norm = np.linalg.norm(diff)
-            if norm == 0:
-                continue  # Avoid division by zero
-            normal = diff / norm
+            normal = diff / np.linalg.norm(diff)
+            if side_flag:  # current crystal is j ⇒ flip
+                normal = -normal
 
-            points = delaunay.points
-
-            # Bounding box filtering
-            min_coords = np.min(points, axis=0)
-            max_coords = np.max(points, axis=0)
+            # bounding-box pre-filter
+            min_xyz, max_xyz = (self.bbox_A if side_flag == 0 else self.bbox_B)[
+                poly_index
+            ]
             bbox_mask = np.all(
-                (voxel_coords >= min_coords) & (voxel_coords <= max_coords), axis=1
+                (voxel_coords >= min_xyz) & (voxel_coords <= max_xyz), axis=1
             )
-            candidate_voxel_coords = voxel_coords[bbox_mask]
-            candidate_indices_in_voxel_coords = np.where(bbox_mask)[0]
+            cand_ids = np.where(bbox_mask)[0]
+            if cand_ids.size == 0:
+                continue
+            cand_coords = voxel_coords[cand_ids]
 
-            if candidate_voxel_coords.size == 0:
-                continue  # Skip if no candidate voxels
+            # STEP-1: keep voxels within ±extrusion_factor of ridge plane
+            d = (cand_coords - delaunay.points[0]) @ normal
+            band_mask = np.abs(d) <= self.extrusion_factor
+            if not np.any(band_mask):
+                continue
+            band_ids = cand_ids[band_mask]
+            band_coords = cand_coords[band_mask]
 
-            #################################
-            # Identify grain boundary voxels
-            ###
-            # STEP 1: Keep all voxels where the distance to interface plane is not larger than extrusion factor (projection onto normal vector)
-            ###
-            inside = (
-                np.abs((candidate_voxel_coords - points[0][None, :]) @ normal)
-                <= self.extrusion_factor
+            # STEP-2: 2-D point-in-polygon test in the ridge plane
+            polygon = delaunay.points[:-1] - delaunay.points[0]
+            poly_roll = np.roll(polygon, -1, axis=0)
+            edges = (poly_roll - polygon)[np.newaxis, :, :]
+
+            proj = band_coords - delaunay.points[0]
+            proj -= np.outer((proj @ normal), normal)  # project
+            vecs = proj[:, np.newaxis, :] - polygon[np.newaxis, :, :]
+            cross = np.cross(edges, vecs, axis=-1)
+            ref = cross[:, :1, :]
+            same_dir = np.sum(cross * ref, axis=-1)
+            inside_poly = np.logical_or(
+                np.all(same_dir >= 0, 1), np.all(same_dir <= 0, 1)
             )
+            if not np.any(inside_poly):
+                continue
 
-            ###
-            # STEP 2: Keep all voxels where the in-plane projection lies within the ridge (2D polygon), i.e. voxel is 'above'  or 'below the ridge area
-            # Idea: when walking along the edges of the ridge a point always needs to be on the same side of yours to be inside of the polygon
-            # ===> if the cross products of the candidate voxel (wrt to ridge points) with each edge of the ridge are all of same sign,
-            # the voxel should be kept
-            ###
-            # Define ridge (shifted to origin)
-            # IMPORTANT: Last TWO components of points are crystal seeds used for the construction of the polyhedron (DO NOT CONSIDER!)
-            polygon = points[:-1] - points[0][None, :]
-            polygon_rolled = np.roll(polygon, -1, axis=0)
-            edges = (polygon_rolled - polygon)[np.newaxis, :, :]
-
-            # Project points onto ridge plane: ONLY CONSIDER VOXELS THAT HAVE BEEN IDENTIFIED IN STEP 1 TO SAVE TIME!
-            coord_projections = (
-                candidate_voxel_coords[inside] - points[0][None, :]
-            ) @ (np.eye(3, 3) - np.outer(normal, normal))
-            # Vector from ridge vertices to each voxel position to be checked
-            coord_vectors = coord_projections[:, np.newaxis, :] - polygon[None, :, :]
-
-            # Cross product for each point with each edge
-            cross = np.cross(edges, coord_vectors, axis=-1)
-
-            # Check whether they all have same direction by checking dot products of the cross products
-            ref = cross[:, 0:1, :]
-            same_direction = np.sum(cross * ref, axis=-1)
-            all_positive = np.all(same_direction >= 0, axis=1)
-            all_negative = np.all(same_direction <= 0, axis=1)
-
-            inside[inside] &= np.logical_or(all_positive, all_negative)
-
-            #################################
-
-            if not np.any(inside):
-                continue  # Skip if no inside voxels
-
-            inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[inside]
-            inside_indices = crystal_mask_indices[inside_indices_in_voxel_coords]
-
-            crystal_mask[*inside_indices.T] = 0
+            # remove voxels
+            kill_ids = band_ids[inside_poly]
+            kill_idx = crystal_idx[kill_ids]
+            crystal_mask[tuple(kill_idx.T)] = False
 
         return crystal_mask
 
     def _shrink_and_analyze(self) -> None:
-        unique_crystals = np.unique(self.image)
+        """
+        Builds:
+        • self.eroded_image        – crystals (0…N-1) and ridge IDs (N…)
+        • self.coords_array …      – unchanged from your previous implementation
+        • self.ridge_metadata[tag] – (normal, crystal_a, crystal_b)
+        """
+        N = self.num_crystals
+        unique_crystals = np.arange(N)  # 0 … N-1
         eroded_image = -1 * np.ones_like(self.image)
         Nx, Ny, Nz = self.image.shape
         hx, hy, hz = self.L / np.array([Nx, Ny, Nz])
-
-        # Initialize lists for concatenation
-        coords_list = []
-        elem_xyz_list = []
-        materials_list = []
-        normal_list = []
-
-        # Precompute voxel scales
         self.voxel_scale = np.array([hx, hy, hz])
 
         for crystal in unique_crystals:
             crystal_mask = self.image == crystal
-            eroded_mask = self._periodic_thickness_consistent_erosion(crystal)
+            # interior voxels that survive the erosion step
+            interior_mask = self._periodic_thickness_consistent_erosion(crystal)
 
-            boundary_mask = np.logical_and(crystal_mask, np.logical_not(eroded_mask))
-            boundary_mask_indices = np.array(
-                np.where(boundary_mask)
-            ).T  # Shape: (num_voxels, 3)
-            voxel_coords = (
-                boundary_mask_indices + 0.5
-            ) * self.voxel_scale  # Shape: (num_voxels, 3)
-
-            if boundary_mask_indices.size == 0:
-                continue  # Skip if no boundary voxels
-
-            # Initialize a boolean array to keep track of checked voxels
-            voxel_checked = np.full(len(voxel_coords), False, dtype=bool)
+            # voxels that WERE removed => potential grain-boundary voxels
+            boundary_mask = crystal_mask & np.logical_not(interior_mask)
+            boundary_idx = np.array(np.where(boundary_mask)).T
+            if boundary_idx.size == 0:
+                # crystal disappeared completely (rare)
+                continue
+            voxel_coords = (boundary_idx + 0.5) * self.voxel_scale
+            voxel_checked = np.zeros(len(voxel_coords), dtype=bool)
 
             for poly_index, side_flag in self.polytrack.get(crystal, []):
+                tag = self.ridge_tags[poly_index]  # N + poly_index
                 delaunay = (
                     self.polylist_A[poly_index]
                     if side_flag == 0
                     else self.polylist_B[poly_index]
                 )
-                points = delaunay.points
 
-                # Bounding box filtering
-                min_coords = np.min(points, axis=0)
-                max_coords = np.max(points, axis=0)
+                min_xyz, max_xyz = (self.bbox_A if side_flag == 0 else self.bbox_B)[
+                    poly_index
+                ]
                 bbox_mask = np.all(
-                    (voxel_coords >= min_coords) & (voxel_coords <= max_coords), axis=1
+                    (voxel_coords >= min_xyz) & (voxel_coords <= max_xyz), axis=1
                 )
-                candidate_voxel_coords = voxel_coords[bbox_mask]
-                candidate_indices_in_voxel_coords = np.where(bbox_mask)[0]
+                cand_ids = np.where(bbox_mask & ~voxel_checked)[0]
+                if cand_ids.size == 0:
+                    continue
+                cand_coords = voxel_coords[cand_ids]
 
-                if candidate_voxel_coords.size == 0:
-                    continue  # Skip if no candidate voxels
-
-                # Perform point-in-polyhedron test
-                inside = delaunay.find_simplex(candidate_voxel_coords) >= 0
-                inside &= ~voxel_checked[candidate_indices_in_voxel_coords]
-
+                inside = delaunay.find_simplex(cand_coords) >= 0
                 if not np.any(inside):
-                    continue  # Skip if no inside voxels
+                    continue
+                in_ids = cand_ids[inside]
+                in_idx = boundary_idx[in_ids]
 
-                inside_indices_in_voxel_coords = candidate_indices_in_voxel_coords[
-                    inside
-                ]
-                inside_indices = boundary_mask_indices[inside_indices_in_voxel_coords]
+                # write ridge tag into eroded_image (skip if already tagged)
+                new_vox = eroded_image[tuple(in_idx.T)] == -1
+                in_idx = in_idx[new_vox]
+                if in_idx.size == 0:
+                    continue
+                eroded_image[tuple(in_idx.T)] = tag
 
-                # Compute element indices
-                elem_xyz_array = np.ravel_multi_index(inside_indices.T, (Nx, Ny, Nz))
+                # ---------- outward normal (store once per tag) ---------------
+                if tag not in self.ridge_metadata:
+                    i_idx, j_idx = self.polyinfo[poly_index]
+                    diff = (
+                        self.voroTess.voronoi.points[j_idx]
+                        - self.voroTess.voronoi.points[i_idx]
+                    )
+                    normal = diff / np.linalg.norm(diff)
+                    cA = self.voroTess.crystal_index_map[i_idx]
+                    cB = self.voroTess.crystal_index_map[j_idx]
+                    self.ridge_metadata[tag] = (normal, cA, cB)
+                # ----------------------------------------------------------------
 
-                ridge_pts = self.polyinfo[poly_index]  # Seed indices
-                diff = (
-                    self.voroTess.voronoi.points[ridge_pts[1]]
-                    - self.voroTess.voronoi.points[ridge_pts[0]]
-                )
-                norm = np.linalg.norm(diff)
-                if norm == 0:
-                    continue  # Avoid division by zero
-                normal = diff / norm
+                voxel_checked[in_ids] = True
 
-                # Map extended seed indices to original seed indices (crystal labels)
-                materials = [
-                    self.voroTess.crystal_index_map[pt_idx] for pt_idx in ridge_pts
-                ]
+            # crystal interior stays labelled with the crystal index
+            eroded_image[(crystal_mask & interior_mask)] = crystal
 
-                num_voxels = inside_indices.shape[0]
-                coords_list.append(inside_indices)
-                elem_xyz_list.append(elem_xyz_array)
-                materials_array = np.tile(materials, (num_voxels, 1))
-                materials_list.append(materials_array)
-                normal_array = np.tile(normal, (num_voxels, 1))
-                normal_list.append(normal_array)
+        # ----------------------------------------------------------------------
+        # Renumber ridge tags so they are contiguous: N, N+1, N+2, ...
+        # ----------------------------------------------------------------------
+        active_tags = sorted(t for t in self.ridge_metadata.keys())
+        mapping = {old: self.num_crystals + i for i, old in enumerate(active_tags)}
 
-                # Mark checked voxels
-                voxel_checked[inside_indices_in_voxel_coords] = True
+        if active_tags:  # nothing to do for pure bulk
+            # 1) remap eroded_image in-place  (vectorised boolean mask per tag)
+            for old, new in mapping.items():
+                if old == new:
+                    continue
+                eroded_image[eroded_image == old] = new
 
-            print(
-                f"In crystal number-{crystal}, number of marked voxels-{voxel_checked.sum()} out of {len(voxel_checked)} voxels"
-            )
-            eroded_image[eroded_mask] = crystal
-
+            # 2) rebuild ridge_metadata with new keys
+            self.ridge_metadata = {
+                mapping[old]: value for old, value in self.ridge_metadata.items()
+            }
+        # ----------------------------------------------------------------------
         self.eroded_image = eroded_image
 
-        # Concatenate arrays
-        if coords_list:
-            self.coords_array = np.vstack(coords_list)
-            self.elem_xyz_array = np.concatenate(elem_xyz_list)
-            self.materials_array = np.vstack(materials_list)
-            self.normal_array = np.vstack(normal_list)
-        else:
-            self.coords_array = np.empty((0, 3), dtype=int)
-            self.elem_xyz_array = np.empty(0, dtype=int)
-            self.materials_array = np.empty((0, 2), dtype=int)
-            self.normal_array = np.empty((0, 3), dtype=float)
-
     def _precompute_polyhedrons(self, voroTess: VoronoiTessellation) -> None:
-        self.polylist_A = []  # ridge + seed_i
-        self.polylist_B = []  # ridge + seed_j
-        self.polyinfo = []
+        self.polylist_A, self.polylist_B = [], []
+        self.polyinfo, self.ridge_tags = [], []
+        self.bbox_A, self.bbox_B = [], []
         self.polytrack = defaultdict(list)
 
-        for _i, (ridge, ridge_pts) in enumerate(
-            zip(
-                voroTess.voronoi.ridge_vertices,
-                voroTess.voronoi.ridge_points,
-                strict=False,
-            )
+        # helper maps
+        self._key2tag = {}  # (cA,cB,n_key) → tag
+        self.next_tag = self.num_crystals  # first ridge label
+        Q = 1_000_000.0  # 1 µrad normal quantisation
+
+        for ridge, ridge_pts in zip(
+            voroTess.voronoi.ridge_vertices, voroTess.voronoi.ridge_points, strict=False
         ):
-            if -1 in ridge:
-                # Skip infinite ridges
+            if -1 in ridge:  # infinite ridge
                 continue
 
-            verts = voroTess.voronoi.vertices[ridge]  # k×3
-            seed_i, seed_j = voroTess.voronoi.points[ridge_pts]
+            cA = self.voroTess.crystal_index_map[ridge_pts[0]]
+            cB = self.voroTess.crystal_index_map[ridge_pts[1]]
 
-            poly_i = Delaunay(np.vstack((verts, seed_i)))  # half-space toward i
-            poly_j = Delaunay(np.vstack((verts, seed_j)))  # half-space toward j
+            # ---------- canonical, orientation-agnostic normal ---------------
+            seed_i, seed_j = voroTess.voronoi.points[ridge_pts]
+            n = seed_j - seed_i
+            n /= np.linalg.norm(n)
+            if (
+                (n[0] < 0)
+                or (np.isclose(n[0], 0) and n[1] < 0)
+                or (np.isclose(n[0], 0) and np.isclose(n[1], 0) and n[2] < 0)
+            ):
+                n = -n
+            n_key = tuple((n * Q).round().astype(int))
+            # -----------------------------------------------------------------
+
+            tag = self._key2tag.setdefault(
+                (min(cA, cB), max(cA, cB), n_key), self.next_tag
+            )
+            if tag == self.next_tag:
+                self.next_tag += 1
+
+            # -------------- build the two half-polyhedra ---------------------
+            verts = voroTess.voronoi.vertices[ridge]
+            poly_i = Delaunay(np.vstack((verts, seed_i)))
+            poly_j = Delaunay(np.vstack((verts, seed_j)))
 
             idx = len(self.polylist_A)
             self.polylist_A.append(poly_i)
             self.polylist_B.append(poly_j)
-            self.polyinfo.append(ridge_pts)
+            self.polyinfo.append(tuple(ridge_pts))
+            self.ridge_tags.append(tag)
 
-            # Update polytrack with the correct index
-            for pt_idx in ridge_pts:
-                crystal_label = self.voroTess.crystal_index_map[pt_idx]
-                self.polytrack[crystal_label].append(
-                    (idx, 0 if pt_idx == ridge_pts[0] else 1)
-                )
+            pts_i = np.vstack((verts, seed_i))
+            pts_j = np.vstack((verts, seed_j))
+            self.bbox_A.append((pts_i.min(0), pts_i.max(0)))
+            self.bbox_B.append((pts_j.min(0), pts_j.max(0)))
 
-    def write_h5(self, filepath: Path, grp_name: str, order: str = "zyx") -> None:
+            self.polytrack[cA].append((idx, 0))  # hull A faces cA
+            self.polytrack[cB].append((idx, 1))  # hull B faces cB)
+
+    def write_h5(
+        self,
+        filepath: Path,
+        grp_name: str,
+        order: str = "zyx",
+        save_normals: bool = False,
+    ) -> None:
         """
         Write this eroded periodic voronoi image into a h5-file.
 
@@ -291,64 +286,41 @@ class PeriodicVoronoiImageErosion:
             filepath (Path): Path to h5 file.
             grp_name (str): Name of h5py group.
             order (str, optional): Either one of 'xyz' or 'zyx'. Defaults to "zyx".
+            save_normals (bool, optional): Whether to save the normals field. Defaults to False.
         """
         with h5py.File(filepath, "a") as h5_file:
             grp = h5_file.require_group(grp_name)
             compression_opts = 6
 
-            # Define dtype for the structured numpy array for GBVoxelInfo
-            voxel_info_dtype = np.dtype(
+            # Define dtype for the ridge metadata to include ridge tag
+            GBVoxelInfo_dtype = np.dtype(
                 [
-                    ("coords", "i8", (3,)),
-                    ("elem_xyz", "i8"),
-                    ("materials", "i8", (2,)),
-                    ("normal", "f8", (3,)),
+                    ("GB_tag", "i8"),
+                    ("GB_normal", "f8", (3,)),
+                    ("crystalA", "i8"),
+                    ("crystalB", "i8"),
                 ]
             )
-            # Convert lists to a structured numpy array
-            voxel_info_array = np.array(
-                list(
-                    zip(
-                        self.coords_array,
-                        self.elem_xyz_array,
-                        self.materials_array,
-                        self.normal_array,
-                        strict=False,
+            # Convert ridge_metadata dictionary to structured array
+            ridge_tags = sorted(self.ridge_metadata.keys())
+            GBVoxelInfo = np.array(
+                [
+                    (
+                        tag,
+                        self.ridge_metadata[tag][0],
+                        self.ridge_metadata[tag][1],
+                        self.ridge_metadata[tag][2],
                     )
-                ),
-                dtype=voxel_info_dtype,
+                    for tag in ridge_tags
+                ],
+                dtype=GBVoxelInfo_dtype,
             )
 
-            # Create a new field for normals, taking shape from the original image
-            Nx, Ny, Nz = self.image.shape
-            normals_field = np.zeros((Nx, Ny, Nz, 3))
-
-            for idx, voxel in enumerate(self.coords_array):
-                x, y, z = voxel
-                normals_field[x, y, z] = self.normal_array[idx]
-
-            # Optionally permute the eroded_image before saving, based on the order parameter
+            # Prepare permutated eroded image
             if order == "xyz":
-                #################################
-                # Image is in order of x, y, z
-                # Vector field is in order of x, y, z
-                #################################
                 permuted_eroded_image = self.eroded_image
-                permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_normals_field = normals_field
             elif order == "zyx":
-                #################################
-                # Image is in order of z, y, x
-                # Vector field is in order of x, y, z
-                #################################
                 permuted_eroded_image = self.eroded_image.transpose(2, 1, 0)
-
-                permuted_voxel_info_array = voxel_info_array.copy()
-                permuted_voxel_info_array["coords"] = voxel_info_array["coords"]
-                permuted_voxel_info_array["normal"] = voxel_info_array["normal"]
-
-                permuted_normals_field = normals_field
-                permuted_normals_field = normals_field.transpose(2, 1, 0, 3)
 
             # Save eroded image to .h5 file
             if "eroded_image" in grp:
@@ -367,27 +339,56 @@ class PeriodicVoronoiImageErosion:
             image_dataset.attrs.create(
                 "VoronoiSeeds_xyz", np.array(self.seeds, dtype=np.float64)
             )
+            # Create GBVoxelInfo attribute with ridge_tag and normal information as key-value pairs
+            gb_voxel_info = {}
+            for tag in sorted(self.ridge_metadata.keys()):
+                normal, _, _ = self.ridge_metadata[tag]
+                gb_voxel_info[str(tag)] = {
+                    "GB_tag": int(tag),
+                    "GB_normal": normal.tolist(),
+                }
+            # Store as string attribute (JSON format)
+            image_dataset.attrs["GBVoxelInfo"] = json.dumps(gb_voxel_info)
+            image_dataset.attrs["num_crystals"] = self.num_crystals
+            image_dataset.attrs["num_GB"] = len(self.ridge_metadata)
 
-            # Save GBVoxelInfo to .h5 file
+            # Save ridge metadata to .h5 file
             if "GBVoxelInfo" in grp:
                 del grp["GBVoxelInfo"]
                 print("Overwriting existing 'GBVoxelInfo' dataset.")
             grp.create_dataset(
                 "GBVoxelInfo",
-                data=permuted_voxel_info_array,
+                data=GBVoxelInfo,
                 compression="gzip",
                 compression_opts=compression_opts,
             )
 
-            # Save normals to .h5 file
-            if "normals" in grp:
-                del grp["normals"]
-                print("Overwriting existing 'normals' dataset.")
-            normals_dataset = grp.create_dataset(
-                "normals",
-                data=permuted_normals_field,
-                dtype="f8",
-                compression="gzip",
-                compression_opts=compression_opts,
-            )
-            normals_dataset.attrs["permute_order"] = order
+            # Only save normals if explicitly requested
+            if save_normals:
+                # Create a new field for normals, taking shape from the original image
+                Nx, Ny, Nz = self.eroded_image.shape
+                normals_field = np.zeros((Nx, Ny, Nz, 3))
+                for i, j, k in np.ndindex(self.eroded_image.shape):
+                    mat_index = self.eroded_image[i, j, k]
+                    if mat_index >= self.num_crystals:
+                        normal, _, _ = self.ridge_metadata[mat_index]
+                        normals_field[i, j, k] = normal
+
+                # Apply permutation to normals field if needed
+                if order == "xyz":
+                    permuted_normals_field = normals_field
+                elif order == "zyx":
+                    permuted_normals_field = normals_field.transpose(2, 1, 0, 3)
+
+                # Save normals to .h5 file
+                if "normals" in grp:
+                    del grp["normals"]
+                    print("Overwriting existing 'normals' dataset.")
+                normals_dataset = grp.create_dataset(
+                    "normals",
+                    data=permuted_normals_field,
+                    dtype="f8",
+                    compression="gzip",
+                    compression_opts=compression_opts,
+                )
+                normals_dataset.attrs["permute_order"] = order
