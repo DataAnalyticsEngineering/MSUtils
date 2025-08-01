@@ -1,7 +1,7 @@
 [project]
 name = "MSUtils"
 version = "0.1.0"
-description = "Microstructure Utilities by DAE University of Stuttgart"
+description = "Microstructure Utilities by Data Analytics in Engineering (DAE) group, University of Stuttgart"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 
 [dependencies]
@@ -29,20 +29,19 @@ pyrecest = {git = "https://github.com/FlorianPfaff/pyRecEst.git"}
 
 
 [tool.pixi.dependencies]
-numpy = ">=2.2.5,<3"
-h5py = ">=3.13.0,<4"
-scipy = ">=1.15.2,<2"
-matplotlib = ">=3.10.3,<4"
-scikit-image = ">=0.25.2,<0.26"
-lxml = ">=5.4.0,<6"
-plotly = ">=6.0.1,<7"
-sympy = ">=1.14.0,<2"
-ipykernel = ">=6.29.5,<7"
-nbclient = ">=0.10.2,<0.11"
-pre-commit = ">=4.2.0,<5"
-quaternion = ">=2024.0.8,<2025"
-beartype = ">=0.20.2,<0.21"
-pyvista = ">=0.45.2,<0.46"
+numpy = "*"
+h5py = "*"
+scipy = "*"
+matplotlib = "*"
+scikit-image = "*"
+lxml = "*"
+plotly = "*"
+sympy = "*"
+ipykernel = "*"
+quaternion = "*"
+beartype = "*"
+
+pre-commit = "*"
 
 [tool.pixi.feature.build.dependencies]
 twine = "*"
