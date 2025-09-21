@@ -14,67 +14,33 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.sdist]
 include = ["MSUtils"]
 
-[tool.hatch.build.targets.wheel]
-include = ["MSUtils"]
-
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
 MSUtils = { path = ".", editable = true }
 pyrecest = {git = "https://github.com/FlorianPfaff/pyRecEst.git"}
 
-[tool.pixi.tasks]
-
+[tool.pixi.tasks.h52xdmf]
+args = ["file", { arg = "extra", default = "" }]
+cmd  = "cd \"$INIT_CWD\" && python -m MSUtils.general.h52xdmf {{ extra }} {{ file }}"
 
 [tool.pixi.dependencies]
-numpy = "*"
-h5py = "*"
-scipy = "*"
-matplotlib = "*"
-scikit-image = "*"
-lxml = "*"
-plotly = "*"
-sympy = "*"
-ipykernel = "*"
-quaternion = "*"
-beartype = "*"
+numpy = ">=1.26.4,<2"
+h5py = ">=3.14.0,<4"
+scipy = ">=1.11.4,<2"
+matplotlib = ">=3.10.6,<4"
+scikit-image = ">=0.25.2,<0.26"
+lxml = ">=6.0.1,<7"
+plotly = ">=6.3.0,<7"
+sympy = ">=1.14.0,<2"
+ipykernel = ">=6.30.1,<7"
+quaternion = ">=2024.0.12,<2025"
+beartype = ">=0.21.0,<0.22"
+pre-commit = ">=4.3.0,<5"
+puma = ">=3.2.0,<4"
 
-pre-commit = "*"
-
-[tool.pixi.feature.build.dependencies]
-twine = "*"
-
-[tool.pixi.feature.build.pypi-dependencies]
-build = "*"
-
-[tool.pixi.feature.build.tasks]
-build_exes = {cmd= "rm -r dist; python -m build"}
-push_to_pypi = "python -m twine upload --verbose --repository testpypi dist/*"
-
-[tool.pixi.feature.docs.tasks]
-build_docs = "sphinx-build -M html docs docs/_build"
-push_docs = "bash docs/scripts/update_docs_by_hand.sh"
-
-[tool.pixi.feature.docs.target.win-64.tasks]
-push_docs = "powershell docs/scripts/update_docs_by_hand.ps1"
-
-[tool.pixi.feature.test.tasks]
-test = "pytest --junitxml=coverage/junit/test-results.xml --cov=MSUtils --cov-report=term --cov-report=xml:coverage/coverage.xml --cov-report=html:coverage/html ; mkdir -p docs/_static/ && cp -r coverage/html/ docs/_static/test_cov/"
-pre-commit-all = "pre-commit run --all-files"
-
-[tool.pixi.feature.docs.dependencies]
-sphinx = "*"
-pydata-sphinx-theme = "*"
-sphinxcontrib-mermaid = "*"
-nbsphinx = "*"
-
-[tool.pixi.feature.test.dependencies]
-pytest = ">=7.0.0,<8"
-pytest-cov = "*"
 
 [tool.pixi.environments]
 default = {features = [], solve-group = "default"}
-build = {features = ["build"]}
-utility = {features = ["test","docs"], solve-group = "default"}
