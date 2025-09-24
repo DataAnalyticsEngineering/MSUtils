@@ -69,6 +69,7 @@ vtk2h5(
     h5_file_path="data/TexGen_custom_weave1.h5",
     grp_name="/",
     overwrite=True,
+    data_fields=["YarnIndex", "Orientation"],
 )
 os.remove("data/custom_weave1.vtu")
 write_xdmf(

@@ -125,6 +125,7 @@ vtk2h5(
     h5_file_path="data/TexGen_triaxialbraid.h5",
     grp_name="/",
     overwrite=True,
+    data_fields=["YarnIndex", "Orientation"],
 )
 os.remove("data/triaxialbraid.vtu")
 write_xdmf(

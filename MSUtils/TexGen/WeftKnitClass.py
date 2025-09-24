@@ -1,6 +1,6 @@
 # =============================================================================
 # TexGen: Geometric textile modeller.
-# Copyright (C) 2015 Louise Brown
+# Copyright (C) 2024 Louise Brown
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -20,25 +20,22 @@
 # Python 3 version used runpy module to execute scripts from TexGen GUI which requires import of library
 from TexGen.Core import *
 
-# Create a 4x4 2d woven textile with yarn spacing of 5 and thickness 2
+# Create a weft knit textile with 2 wales and courses, wale height 1, loop height 1.2 and yarn thickness 0.15
 # The fifth parameter indicates whether to refine the textile to avoid intersections
-Textile = CTextileWeave2D(4, 4, 5, 2, False)
+WeftKnit = CTextileWeftKnit(2, 2, 1, 1.2, 1, 0.15)
 
-# Set the weave pattern
-Textile.SwapPosition(3, 0)
-Textile.SwapPosition(2, 1)
-Textile.SwapPosition(1, 2)
-Textile.SwapPosition(0, 3)
-
-# Adjust the yarn width and height
-Textile.SetYarnWidths(4)
-Textile.SetYarnHeights(0.8)
+numSectionPoints = 30
+numSlaveNodes = 60
+WeftKnit.SetResolution(numSectionPoints, numSlaveNodes)
 
 # Setup a domain
-Textile.AssignDefaultDomain()
+WeftKnit.AssignDefaultDomain()
+
+# Select knit model (only one available currently)
+WeftKnit.SetLoopModel(RAVANDI_2021)
 
 # Add the textile
-AddTextile(Textile)
+AddTextile(WeftKnit)
 
 ###################################################
 # Export to voxel mesh and convert to h5 and xdmf
@@ -53,8 +50,8 @@ nx, ny, nz = 128, 128, 128
 vm = CRectangularVoxelMesh()
 
 vm.SaveVoxelMesh(
-    Textile,
-    "data/2dweave.vtu",
+    WeftKnit,
+    "data/weftknitclass.vtu",
     nx,
     ny,
     nz,
@@ -66,17 +63,17 @@ vm.SaveVoxelMesh(
 )
 
 vtk2h5(
-    vtk_files=["data/2dweave.vtu"],
-    h5_file_path="data/TexGen_2dweave.h5",
+    vtk_files=["data/weftknitclass.vtu"],
+    h5_file_path="data/TexGen_weftknitclass.h5",
     grp_name="/",
     overwrite=True,
     data_fields=["YarnIndex", "Orientation"],
 )
-os.remove("data/2dweave.vtu")
+os.remove("data/weftknitclass.vtu")
 write_xdmf(
-    h5_filepath="data/TexGen_2dweave.h5",
-    xdmf_filepath="data/TexGen_2dweave.xdmf",
-    microstructure_length=[20, 20, 2.2],
+    h5_filepath="data/TexGen_weftknitclass.h5",
+    xdmf_filepath="data/TexGen_weftknitclass.xdmf",
+    microstructure_length=[2, 2, 0.3],
     time_series=False,
     verbose=True,
 )

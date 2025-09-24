@@ -146,6 +146,7 @@ vtk2h5(
     h5_file_path="data/TexGen_NonCrimpFabric.h5",
     grp_name="/",
     overwrite=True,
+    data_fields=["YarnIndex", "Orientation"],
 )
 os.remove("data/NonCrimpFabric.vtu")
 write_xdmf(

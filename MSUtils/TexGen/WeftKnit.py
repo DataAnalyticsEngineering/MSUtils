@@ -1,6 +1,6 @@
 # =============================================================================
 # TexGen: Geometric textile modeller.
-# Copyright (C) 2015 Louise Brown
+# Copyright (C) 2006 Martin Sherburn
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,49 +23,53 @@ from TexGen.Core import *
 # Create a textile
 Textile = CTextile()
 
-# Create a lenticular section
-Section = CSectionLenticular(0.3, 0.14)
-Section.AssignSectionMesh(CSectionMeshTriangulate(30))
+# Create a yarn
+Yarn = CYarn()
 
-# Create 4 yarns
-Yarns = (CYarn(), CYarn(), CYarn(), CYarn())
+# Define some constants
+r = 1
+sx = r * 2.5
+sy = r * 10
+ly = 0.75 * (sx + r)
 
-# Add nodes to the yarns to describe their paths
-Yarns[0].AddNode(CNode(XYZ(0, 0, 0)))
-Yarns[0].AddNode(CNode(XYZ(0.35, 0, 0.15)))
-Yarns[0].AddNode(CNode(XYZ(0.7, 0, 0)))
+# Add nodes to the yarns to describe the yarn path
+Yarn.AddNode(CNode(XYZ(0, 0, r)))
+Yarn.AddNode(CNode(XYZ(sx + r, ly, 0)))
+Yarn.AddNode(CNode(XYZ(sx, ly + 0.5 * sy, -r)))
+Yarn.AddNode(CNode(XYZ(sx - r, ly + sy, 0)))
+Yarn.AddNode(CNode(XYZ(2 * sx, 2 * ly + sy, r)))
+Yarn.AddNode(CNode(XYZ(3 * sx + r, ly + sy, 0)))
+Yarn.AddNode(CNode(XYZ(3 * sx, ly + 0.5 * sy, -r)))
+Yarn.AddNode(CNode(XYZ(3 * sx - r, ly, 0)))
+Yarn.AddNode(CNode(XYZ(4 * sx, 0, r)))
 
-Yarns[1].AddNode(CNode(XYZ(0, 0.35, 0.15)))
-Yarns[1].AddNode(CNode(XYZ(0.35, 0.35, 0)))
-Yarns[1].AddNode(CNode(XYZ(0.7, 0.35, 0.15)))
+# Assign a constant circular cross-section
+Section = CSectionEllipse(2 * r, 2 * r)
+Yarn.AssignSection(CYarnSectionConstant(Section))
 
-Yarns[2].AddNode(CNode(XYZ(0, 0, 0.15)))
-Yarns[2].AddNode(CNode(XYZ(0, 0.35, 0)))
-Yarns[2].AddNode(CNode(XYZ(0, 0.7, 0.15)))
+# Create repeats
+Yarn.AddRepeat(XYZ(4 * sx, 0, 0))
+Yarn.AddRepeat(XYZ(0, 2 * sy, 0))
 
-Yarns[3].AddNode(CNode(XYZ(0.35, 0, 0)))
-Yarns[3].AddNode(CNode(XYZ(0.35, 0.35, 0.15)))
-Yarns[3].AddNode(CNode(XYZ(0.35, 0.7, 0)))
+# Set the resolution of the surface mesh created
+Yarn.SetResolution(20)
 
-# We want the same interpolation and section shape for all the yarns so loop over them all
-for Yarn in Yarns:
-    # Set the interpolation function
-    Yarn.AssignInterpolation(CInterpolationCubic())
-    # Assign a constant cross-section all along the yarn
-    Yarn.AssignSection(CYarnSectionConstant(Section))
-    # Set the resolution
-    Yarn.SetResolution(8)
-    # Add repeats to the yarn
-    Yarn.AddRepeat(XYZ(0.7, 0, 0))
-    Yarn.AddRepeat(XYZ(0, 0.7, 0))
-    # Add the yarn to our textile
-    Textile.AddYarn(Yarn)
+# Add the yarn to the textile
+Textile.AddYarn(Yarn)
+
+# Translate the yarn and add it to the textile
+# Note that this could be part of the repeat vectors but it is done like
+# this to give the yarns different colours
+Yarn.Translate(XYZ(0, sy, 0))
+Textile.AddYarn(Yarn)
 
 # Create a domain and assign it to the textile
-Textile.AssignDomain(CDomainPlanes(XYZ(0, 0, -0.1), XYZ(0.7, 0.7, 0.25)))
+Textile.AssignDomain(
+    CDomainPlanes(XYZ(0, -ly, -2 * r), XYZ(4 * (r * sx), 4 * sy - ly, 2 * r))
+)
 
-# Add the textile with the name "cotton"
-AddTextile("cotton", Textile)
+# Add the textile
+AddTextile("weftknit", Textile)
 
 ###################################################
 # Export to voxel mesh and convert to h5 and xdmf
@@ -81,7 +85,7 @@ vm = CRectangularVoxelMesh()
 
 vm.SaveVoxelMesh(
     Textile,
-    "data/cotton.vtu",
+    "data/weftknit.vtu",
     nx,
     ny,
     nz,
@@ -93,17 +97,17 @@ vm.SaveVoxelMesh(
 )
 
 vtk2h5(
-    vtk_files=["data/cotton.vtu"],
-    h5_file_path="data/TexGen_cotton.h5",
+    vtk_files=["data/weftknit.vtu"],
+    h5_file_path="data/TexGen_weftknit.h5",
     grp_name="/",
     overwrite=True,
     data_fields=["YarnIndex", "Orientation"],
 )
-os.remove("data/cotton.vtu")
+os.remove("data/weftknit.vtu")
 write_xdmf(
-    h5_filepath="data/TexGen_cotton.h5",
-    xdmf_filepath="data/TexGen_cotton.xdmf",
-    microstructure_length=[0.7, 0.7, 0.35],
+    h5_filepath="data/TexGen_weftknit.h5",
+    xdmf_filepath="data/TexGen_weftknit.xdmf",
+    microstructure_length=[10, 40, 4],
     time_series=False,
     verbose=True,
 )
