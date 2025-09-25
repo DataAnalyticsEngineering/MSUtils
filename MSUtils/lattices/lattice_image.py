@@ -29,27 +29,34 @@ def physical_to_voxel(point, dimensions, shape):
     return idx
 
 
+def _inside_cell(P, L, eps=1e-12):
+    P = np.asarray(P, float)
+    L = np.asarray(L, float)
+    return np.all(P >= -eps) and np.all(P < L + eps)
+
+
 def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
-    start = np.asarray(start, dtype=np.float64)
-    end = np.asarray(end, dtype=np.float64)
+    start = np.asarray(start, np.float64)
+    end = np.asarray(end, np.float64)
+    L = np.asarray(L, np.float64)
+
     direction = end - start
     length = np.linalg.norm(direction)
     if length == 0:
         return
     direction /= length
 
-    # Step roughly one voxel diagonal in PHYSICAL space
-    step = np.linalg.norm(voxel_sizes)
+    step = np.linalg.norm(voxel_sizes)  # ~ one voxel diagonal
     num_points = max(1, int(np.ceil(length / step)))
     ts = np.linspace(0.0, length, num_points, dtype=np.float64)
-    points = start + np.outer(ts, direction)
 
-    # Radius window in index units for bounding box
-    voxel_radius = np.array(
-        [radius / voxel_sizes[i] for i in range(3)], dtype=np.float64
-    )
+    voxel_radius = np.array([radius / voxel_sizes[i] for i in range(3)], np.float64)
 
-    for p in points:
+    for t in ts:
+        p = start + t * direction
+        if not _inside_cell(p, L):
+            continue
+
         x, y, z = physical_to_voxel(p, L, microstructure.shape)
 
         x_min = max(0, int(np.floor(x - voxel_radius[0])))
@@ -61,13 +68,13 @@ def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
 
         if strut_type == "circle":
             xx, yy, zz = np.ogrid[x_min:x_max, y_min:y_max, z_min:z_max]
-            # Compute PHYSICAL distance (consistent spacing)
             dx = (xx - x) * voxel_sizes[0]
             dy = (yy - y) * voxel_sizes[1]
             dz = (zz - z) * voxel_sizes[2]
-            distance2 = dx * dx + dy * dy + dz * dz
-            mask = distance2 <= (radius * radius)
+            mask = (dx * dx + dy * dy + dz * dz) <= (radius * radius)
             microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
+        else:
+            raise ValueError("Only 'circle' implemented.")
 
 
 def create_lattice_image(

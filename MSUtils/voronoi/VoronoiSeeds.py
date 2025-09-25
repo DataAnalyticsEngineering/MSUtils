@@ -128,7 +128,9 @@ class VoronoiSeeds:
                 )
             case "diamond":  # Diamond-like seed points
                 self.num_crystals = 2
-                self.seeds = np.array([[0, 0, 0], [0.5, 0.5, 0.5]])
+                self.seeds = np.array([[0, 0, 0], [0.5, 0.5, 0.5]]) * np.array(
+                    self.RVE_length
+                )
             case _:
                 raise ValueError("Unknown sampling method! : " + self.method)
                 # Add more sampling methods here if needed
