@@ -15,48 +15,66 @@ from MSUtils.lattices.lattice_definitions import (
 
 
 def physical_to_voxel(point, dimensions, shape):
-    return np.round(point / dimensions * (np.array(shape) - 1)).astype(int)
+    """
+    Map a physical coordinate in [0, L] to voxel index in [0, N-1],
+    consistently with spacing = L/(N-1).
+    """
+    point = np.asarray(point, dtype=np.float64)
+    shape = np.asarray(shape, dtype=np.int64)
+    dimensions = np.asarray(dimensions, dtype=np.float64)
+
+    # Map [0, L] -> [0, N-1], then clamp
+    idx = np.floor(point / dimensions * (shape - 1) + 0.5).astype(np.int64)
+    idx = np.clip(idx, 0, shape - 1)
+    return idx
+
+
+def _inside_cell(P, L, eps=1e-12):
+    P = np.asarray(P, float)
+    L = np.asarray(L, float)
+    return np.all(P >= -eps) and np.all(P < L + eps)
 
 
 def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
-    start = np.array(start)
-    end = np.array(end)
+    start = np.asarray(start, np.float64)
+    end = np.asarray(end, np.float64)
+    L = np.asarray(L, np.float64)
+
     direction = end - start
     length = np.linalg.norm(direction)
+    if length == 0:
+        return
     direction /= length
 
-    num_points = int(length / np.linalg.norm(voxel_sizes))
-    points = np.linspace(0, length, num_points)
-    points = start + np.outer(points, direction)
+    step = np.linalg.norm(voxel_sizes)  # ~ one voxel diagonal
+    num_points = max(1, int(np.ceil(length / step)))
+    ts = np.linspace(0.0, length, num_points, dtype=np.float64)
 
-    voxel_radius = [radius / voxel_sizes[i] for i in range(3)]
+    voxel_radius = np.array([radius / voxel_sizes[i] for i in range(3)], np.float64)
 
-    for point in points:
-        voxel_point = physical_to_voxel(point, L, microstructure.shape)
-        x, y, z = voxel_point
-        x_min, x_max = (
-            max(0, int(x - voxel_radius[0])),
-            min(microstructure.shape[0], int(x + voxel_radius[0] + 1)),
-        )
-        y_min, y_max = (
-            max(0, int(y - voxel_radius[1])),
-            min(microstructure.shape[1], int(y + voxel_radius[1] + 1)),
-        )
-        z_min, z_max = (
-            max(0, int(z - voxel_radius[2])),
-            min(microstructure.shape[2], int(z + voxel_radius[2] + 1)),
-        )
+    for t in ts:
+        p = start + t * direction
+        if not _inside_cell(p, L):
+            continue
+
+        x, y, z = physical_to_voxel(p, L, microstructure.shape)
+
+        x_min = max(0, int(np.floor(x - voxel_radius[0])))
+        x_max = min(microstructure.shape[0], int(np.ceil(x + voxel_radius[0] + 1)))
+        y_min = max(0, int(np.floor(y - voxel_radius[1])))
+        y_max = min(microstructure.shape[1], int(np.ceil(y + voxel_radius[1] + 1)))
+        z_min = max(0, int(np.floor(z - voxel_radius[2])))
+        z_max = min(microstructure.shape[2], int(np.ceil(z + voxel_radius[2] + 1)))
 
         if strut_type == "circle":
             xx, yy, zz = np.ogrid[x_min:x_max, y_min:y_max, z_min:z_max]
-            distance = (
-                ((xx - x) * voxel_sizes[0]) ** 2
-                + ((yy - y) * voxel_sizes[1]) ** 2
-                + ((zz - z) * voxel_sizes[2]) ** 2
-            )
-            mask = distance <= radius**2
-
-        microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
+            dx = (xx - x) * voxel_sizes[0]
+            dy = (yy - y) * voxel_sizes[1]
+            dz = (zz - z) * voxel_sizes[2]
+            mask = (dx * dx + dy * dy + dz * dz) <= (radius * radius)
+            microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
+        else:
+            raise ValueError("Only 'circle' implemented.")
 
 
 def create_lattice_image(
@@ -76,14 +94,22 @@ def create_lattice_image(
     - microstructure: ndarray - The generated microstructure image.
     """
     if L is None:
-        L = [1, 1, 1]
+        L = [1.0, 1.0, 1.0]
+    L = np.asarray(L, dtype=np.float64)
 
     vertices, edges = unit_cell_func()
-    voxel_sizes = [L[i] / [Nx, Ny, Nz][i] for i in range(3)]
+
+    # CONSISTENT voxel spacing with 0..N-1 indexing
+    Nvec = np.array([Nx, Ny, Nz], dtype=np.int64)
+    voxel_sizes = L / (Nvec - 1).astype(np.float64)
 
     microstructure = np.zeros((Nx, Ny, Nz), dtype=np.int8)
-    for edge in edges:
-        start, end = vertices[edge[0]] * L, vertices[edge[1]] * L
+
+    # scale vertices into physical domain [0, L]
+    phys_vertices = vertices * L
+
+    for a, b in edges:
+        start, end = phys_vertices[a], phys_vertices[b]
         draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L)
 
     return microstructure
@@ -128,7 +154,7 @@ if __name__ == "__main__":
     write_xdmf(
         h5_filepath="data/lattice_microstructures.h5",
         xdmf_filepath="data/lattice_microstructures.xdmf",
-        microstructure_length=L,
+        microstructure_length=L[::-1],
         time_series=False,
         verbose=True,
     )
