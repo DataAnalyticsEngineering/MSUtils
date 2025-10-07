@@ -16,13 +16,13 @@ class TPMS:
     Parameters
     ----------
     tpms_type : str
-        Type of TPMS surface (e.g., 'gyroid', 'schwarz_p', 'diamond', 'neovius', 'iwp').
+        Type of TPMS surface (e.g., 'gyroid', 'schwarz_p', 'diamond', 'neovius', 'iwp', 'lidinoid').
     resolution : tuple of int
         Number of voxels in each direction (Nx, Ny, Nz).
     L : tuple of float
         Physical size in each direction (Lx, Ly, Lz).
     threshold : float
-        Level-set value at which to threshold the implicit function. The surface is at field=0. Thresholding at 0 gives the classic surface. Shifting the threshold inflates/deflates the surface, changing the volume fraction. It does not directly control thickness, but moves the interface.
+        Level-set value at which to threshold the implicit function.
     unitcell_frequency : tuple of int
         Number of unit cell repeats in each direction.
     invert : bool
@@ -30,7 +30,7 @@ class TPMS:
     mode : str
         'solid' (default) for classic TPMS, 'shell' for a shell of finite thickness.
     shell_thickness : float
-        If mode='shell', the thickness of the shell (in field units, not physical units). Typical values: 0.05-0.5.
+        If mode='shell', the thickness of the shell (in field units, not physical units).
     """
 
     def __init__(
@@ -73,13 +73,14 @@ class TPMS:
 
         kind = self.kind
         # Standard references: https://minimalsurfaces.blog/home/repository/triply-periodic/
+        #                      https://kenbrakke.com/evolver/examples/periodic/periodic.html
         if kind in ("gyroid",):
             # Gyroid: sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x)
             return np.sin(X) * np.cos(Y) + np.sin(Y) * np.cos(Z) + np.sin(Z) * np.cos(X)
         if kind in ("schwarz_p", "p"):
             # Schwarz Primitive: cos(x) + cos(y) + cos(z)
             return np.cos(X) + np.cos(Y) + np.cos(Z)
-        if kind in ("diamond", "d"):
+        if kind in ("schwarz_d", "diamond", "d"):
             # Diamond: sin(x)sin(y)sin(z) + sin(x)cos(y)cos(z) + cos(x)sin(y)cos(z) + cos(x)cos(y)sin(z)
             return (
                 np.sin(X) * np.sin(Y) * np.sin(Z)
@@ -88,20 +89,31 @@ class TPMS:
                 + np.cos(X) * np.cos(Y) * np.sin(Z)
             )
         if kind in ("neovius",):
-            # Neovius: cos(x) + cos(y) + cos(z) - 1.5*cos(x)*cos(y)*cos(z)
+            # Neovius: 3 * (cos(x) + cos(y) + cos(z)) + 4 * cos(x)*cos(y)*cos(z)
+            return 3 * (np.cos(X) + np.cos(Y) + np.cos(Z)) + 4 * np.cos(X) * np.cos(
+                Y
+            ) * np.cos(Z)
+        if kind in ("iwp"):
+            # I-WP : 2 * (cos(x)cos(y) + cos(y)cos(z) + cos(z)cos(x)) - (cos(2x) + cos(2y) + cos(2z))
+            return 2 * (
+                np.cos(X) * np.cos(Y) + np.cos(Y) * np.cos(Z) + np.cos(Z) * np.cos(X)
+            ) - (np.cos(2 * X) + np.cos(2 * Y) + np.cos(2 * Z))
+        if kind in ("lidinoid",):
+            # Lidinoid: 0.5 * (sin(2x)cos(y)sin(z) + sin(2y)cos(z)sin(x) + sin(2z)cos(x)sin(y)) - 0.5 * (cos(2x)cos(2y) + cos(2y)cos(2z) + cos(2z)cos(2x)) + 0.15
             return (
-                np.cos(X)
-                + np.cos(Y)
-                + np.cos(Z)
-                - 1.5 * np.cos(X) * np.cos(Y) * np.cos(Z)
-            )
-        if kind in ("iwp", "iwp-schoen"):
-            # I-WP (Schoen): cos(x)cos(y) + cos(y)cos(z) + cos(z)cos(x) - sin(x)sin(y)sin(z)
-            return (
-                np.cos(X) * np.cos(Y)
-                + np.cos(Y) * np.cos(Z)
-                + np.cos(Z) * np.cos(X)
-                - np.sin(X) * np.sin(Y) * np.sin(Z)
+                0.5
+                * (
+                    np.sin(2 * X) * np.cos(Y) * np.sin(Z)
+                    + np.sin(2 * Y) * np.cos(Z) * np.sin(X)
+                    + np.sin(2 * Z) * np.cos(X) * np.sin(Y)
+                )
+                - 0.5
+                * (
+                    np.cos(2 * X) * np.cos(2 * Y)
+                    + np.cos(2 * Y) * np.cos(2 * Z)
+                    + np.cos(2 * Z) * np.cos(2 * X)
+                )
+                + 0.15
             )
         raise ValueError(f"Unknown or unsupported TPMS kind: {self.kind}")
 
@@ -251,7 +263,7 @@ class TPMS:
 def main():
     N = 512, 256, 128
     L = 4.0, 2.0, 1.0
-    tpms_types = ["gyroid", "schwarz_p", "diamond", "neovius", "iwp"]
+    tpms_types = ["gyroid", "schwarz_p", "diamond", "neovius", "iwp", "lidinoid"]
     h5_filename = "data/tpms.h5"
     unitcell_frequency = (4, 2, 1)
     invert = True
