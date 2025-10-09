@@ -9,17 +9,25 @@ result to HDF5.
 from MSUtils.TPMS.tpms import TPMS
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.TPMS.tpms_functions import (
+    gyroid,
+    schwarz_p,
+    diamond,
+    neovius,
+    iwp,
+    lidinoid,
+)
 
 if __name__ == "__main__":
     N = 256, 256, 256
     L = 1.0, 1.0, 1.0
-    tpms_type = "iwp"
     h5_filename = "data/tpms_opt.h5"
     unitcell_frequency = (1, 1, 1)
     invert = False
+    tpms_type = "iwp"
 
     tpms = TPMS(
-        tpms_type=tpms_type,
+        func=iwp,
         resolution=N,
         L=L,
         unitcell_frequency=unitcell_frequency,
@@ -48,7 +56,7 @@ if __name__ == "__main__":
 
     # Regenerate TPMS with optimized parameters
     tpms = TPMS(
-        tpms_type=tpms_type,
+        func=iwp,
         resolution=N,
         L=L,
         unitcell_frequency=unitcell_frequency,
