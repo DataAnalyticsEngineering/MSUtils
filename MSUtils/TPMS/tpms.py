@@ -1,8 +1,16 @@
 import numpy as np
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.TPMS.tpms_functions import (
+    gyroid,
+    schwarz_p,
+    diamond,
+    neovius,
+    iwp,
+    lidinoid,
+)
 
 
 def _to_angle(x, L):
@@ -15,8 +23,8 @@ class TPMS:
 
     Parameters
     ----------
-    tpms_type : str
-        Type of TPMS surface (e.g., 'gyroid', 'schwarz_p', 'diamond', 'neovius', 'iwp', 'lidinoid').
+    func : Callable
+        Function handle for the TPMS implicit function (e.g., gyroid, schwarz_p).
     resolution : tuple of int
         Number of voxels in each direction (Nx, Ny, Nz).
     L : tuple of float
@@ -35,7 +43,7 @@ class TPMS:
 
     def __init__(
         self,
-        tpms_type,
+        func: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
         resolution: Optional[Iterable[int]] = (128, 128, 128),
         L: Optional[Iterable[float]] = (1.0, 1.0, 1.0),
         threshold: Optional[float] = 0.5,
@@ -44,7 +52,7 @@ class TPMS:
         mode: str = "solid",
         shell_thickness: float = 0.1,
     ):
-        self.kind = tpms_type.lower()
+        self.func = func
         self.resolution = tuple(int(v) for v in resolution)
         self.L = tuple(float(v) for v in L)
         if isinstance(unitcell_frequency, int):
@@ -62,61 +70,6 @@ class TPMS:
         self._field = None  # cache for field
         self.image = self.generate()
 
-    def implicit_function(
-        self, x: np.ndarray, y: np.ndarray, z: np.ndarray
-    ) -> np.ndarray:
-        # Map by frequency: scale coordinates before mapping to angle
-        kx, ky, kz = self.frequency
-        X = _to_angle(x * kx, self.L[0])
-        Y = _to_angle(y * ky, self.L[1])
-        Z = _to_angle(z * kz, self.L[2])
-
-        kind = self.kind
-        # Standard references: https://minimalsurfaces.blog/home/repository/triply-periodic/
-        #                      https://kenbrakke.com/evolver/examples/periodic/periodic.html
-        if kind in ("gyroid",):
-            # Gyroid: sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x)
-            return np.sin(X) * np.cos(Y) + np.sin(Y) * np.cos(Z) + np.sin(Z) * np.cos(X)
-        if kind in ("schwarz_p", "p"):
-            # Schwarz Primitive: cos(x) + cos(y) + cos(z)
-            return np.cos(X) + np.cos(Y) + np.cos(Z)
-        if kind in ("schwarz_d", "diamond", "d"):
-            # Diamond: sin(x)sin(y)sin(z) + sin(x)cos(y)cos(z) + cos(x)sin(y)cos(z) + cos(x)cos(y)sin(z)
-            return (
-                np.sin(X) * np.sin(Y) * np.sin(Z)
-                + np.sin(X) * np.cos(Y) * np.cos(Z)
-                + np.cos(X) * np.sin(Y) * np.cos(Z)
-                + np.cos(X) * np.cos(Y) * np.sin(Z)
-            )
-        if kind in ("neovius",):
-            # Neovius: 3 * (cos(x) + cos(y) + cos(z)) + 4 * cos(x)*cos(y)*cos(z)
-            return 3 * (np.cos(X) + np.cos(Y) + np.cos(Z)) + 4 * np.cos(X) * np.cos(
-                Y
-            ) * np.cos(Z)
-        if kind in ("iwp"):
-            # I-WP : 2 * (cos(x)cos(y) + cos(y)cos(z) + cos(z)cos(x)) - (cos(2x) + cos(2y) + cos(2z))
-            return 2 * (
-                np.cos(X) * np.cos(Y) + np.cos(Y) * np.cos(Z) + np.cos(Z) * np.cos(X)
-            ) - (np.cos(2 * X) + np.cos(2 * Y) + np.cos(2 * Z))
-        if kind in ("lidinoid",):
-            # Lidinoid: 0.5 * (sin(2x)cos(y)sin(z) + sin(2y)cos(z)sin(x) + sin(2z)cos(x)sin(y)) - 0.5 * (cos(2x)cos(2y) + cos(2y)cos(2z) + cos(2z)cos(2x)) + 0.15
-            return (
-                0.5
-                * (
-                    np.sin(2 * X) * np.cos(Y) * np.sin(Z)
-                    + np.sin(2 * Y) * np.cos(Z) * np.sin(X)
-                    + np.sin(2 * Z) * np.cos(X) * np.sin(Y)
-                )
-                - 0.5
-                * (
-                    np.cos(2 * X) * np.cos(2 * Y)
-                    + np.cos(2 * Y) * np.cos(2 * Z)
-                    + np.cos(2 * Z) * np.cos(2 * X)
-                )
-                + 0.15
-            )
-        raise ValueError(f"Unknown or unsupported TPMS kind: {self.kind}")
-
     def _compute_field(self):
         # Compute and cache the field
         Nx, Ny, Nz = self.resolution
@@ -127,7 +80,14 @@ class TPMS:
         X = xs[:, None, None]
         Y = ys[None, :, None]
         Z = zs[None, None, :]
-        self._field = self.implicit_function(X, Y, Z)
+
+        # Map by frequency: scale coordinates before mapping to angle
+        kx, ky, kz = self.frequency
+        X_ang = _to_angle(X * kx, self.L[0])
+        Y_ang = _to_angle(Y * ky, self.L[1])
+        Z_ang = _to_angle(Z * kz, self.L[2])
+        self._field = self.func(X_ang, Y_ang, Z_ang)
+
         # range normalize to [0, 1]
         self._field = (self._field - np.min(self._field)) / (
             np.max(self._field) - np.min(self._field)
@@ -162,8 +122,6 @@ class TPMS:
         target_vf: float,
         tol: float = 1e-3,
         max_iter: int = 30,
-        n_thresh: int = 50,
-        optimize: str = "both",
     ) -> tuple:
         """
         Find threshold (and shell thickness if mode='shell') for target volume fraction.
@@ -187,7 +145,7 @@ class TPMS:
         flat = field.ravel()
         n_vox = flat.size
         if self.mode == "solid":
-            # For solid: threshold at quantile
+            # For solid: optimize threshold only
             k = int(np.round((1 - target_vf) * n_vox))
             sorted_field = np.partition(flat, k)
             thr = sorted_field[k]
@@ -195,89 +153,49 @@ class TPMS:
             return thr, None
         elif self.mode == "shell":
             minf, maxf = float(np.min(flat)), float(np.max(flat))
-            if optimize == "shell_thickness":
-                # Only optimize shell_thickness, keep threshold fixed
-                thr = self.threshold
-                lo, hi = 0.0, max(maxf - thr, thr - minf)
-                for _ in range(max_iter):
-                    mid = 0.5 * (lo + hi)
-                    vf = np.mean(np.abs(flat - thr) < mid)
-                    err = abs(vf - target_vf)
-                    if err < tol:
-                        break
-                    if vf > target_vf:
-                        hi = mid
-                    else:
-                        lo = mid
-                self.shell_thickness = mid
-                return thr, mid
-            elif optimize == "threshold":
-                # Only optimize threshold, keep shell_thickness fixed
-                t = abs(self.shell_thickness)
-                best_err = float("inf")
-                best_thr = None
-                for thr in np.linspace(minf, maxf, n_thresh):
-                    vf = np.mean(np.abs(flat - thr) < t)
-                    err = abs(vf - target_vf)
-                    if err < best_err:
-                        best_err = err
-                        best_thr = thr
-                        if best_err <= tol:
-                            break
-                self.threshold = best_thr
-                return best_thr, t
-            elif optimize == "both":
-                # Jointly optimize threshold and shell_thickness
-                best_err = float("inf")
-                best_thr = None
-                best_t = None
-                for thr in np.linspace(minf, maxf, n_thresh):
-                    lo, hi = 0.0, max(maxf - thr, thr - minf)
-                    for _ in range(max_iter):
-                        mid = 0.5 * (lo + hi)
-                        vf = np.mean(np.abs(flat - thr) < mid)
-                        err = abs(vf - target_vf)
-                        if err < tol:
-                            break
-                        if vf > target_vf:
-                            hi = mid
-                        else:
-                            lo = mid
-                    vf = np.mean(np.abs(flat - thr) < mid)
-                    err = abs(vf - target_vf)
-                    if err < best_err:
-                        best_err = err
-                        best_thr = thr
-                        best_t = mid
-                        if best_err <= tol:
-                            break
-                self.threshold = best_thr
-                self.shell_thickness = best_t
-                return best_thr, best_t
-            else:
-                raise ValueError(f"Unknown optimize mode: {optimize}")
-        else:
-            raise ValueError(f"Unknown mode: {self.mode}")
+            # For shell: optimize shell_thickness only, keep threshold fixed
+            thr = self.threshold
+            lo, hi = 0.0, max(maxf - thr, thr - minf)
+            for _ in range(max_iter):
+                mid = 0.5 * (lo + hi)
+                vf = np.mean(np.abs(flat - thr) < mid)
+                err = abs(vf - target_vf)
+                if err < tol:
+                    break
+                if vf > target_vf:
+                    hi = mid
+                else:
+                    lo = mid
+            self.shell_thickness = mid
+            return thr, mid
 
 
 def main():
     N = 512, 256, 128
     L = 4.0, 2.0, 1.0
-    tpms_types = ["gyroid", "schwarz_p", "diamond", "neovius", "iwp", "lidinoid"]
     h5_filename = "data/tpms.h5"
     unitcell_frequency = (4, 2, 1)
     invert = True
 
-    for tpms_type in tpms_types:
+    tpms_funcs = {
+        "gyroid": gyroid,
+        "schwarz_p": schwarz_p,
+        "diamond": diamond,
+        "neovius": neovius,
+        "iwp": iwp,
+        "lidinoid": lidinoid,
+    }
+
+    for tpms_type, func in tpms_funcs.items():
         tpms = TPMS(
-            tpms_type=tpms_type,
+            func=func,
             resolution=N,
             L=L,
             unitcell_frequency=unitcell_frequency,
             invert=invert,
             mode="solid",
         )
-        MS = MicrostructureImage(image=tpms.image)
+        MS = MicrostructureImage(image=tpms.image, L=L)
         MS.write(
             h5_filename=h5_filename,
             dset_name=tpms_type,
