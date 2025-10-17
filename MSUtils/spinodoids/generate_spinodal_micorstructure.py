@@ -1,7 +1,8 @@
 from time import time
 import numpy as np
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional
 from scipy.fft import fftn, ifftn, fftfreq
+from scipy.spatial.transform import Rotation
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
 
@@ -14,10 +15,7 @@ def generate_spinodal_microstructure(
     exponent: float = 2.0,
     seed: int = 42,
     L: Union[Tuple[float, float, float], List[float]] = (1.0, 1.0, 1.0),
-    anisotropy_axes: Union[Tuple[np.ndarray, np.ndarray], List[np.ndarray]] = (
-        np.array([1.0, 0.0, 0.0]),
-        np.array([0.0, 1.0, 0.0]),
-    ),
+    rotation_matrix: Optional[np.ndarray] = np.eye(3, dtype=np.float32),
 ):
     """Generate a binary spinodal microstructure via spectral filtering.
 
@@ -25,20 +23,23 @@ def generate_spinodal_microstructure(
     ----------
     shape : tuple or list
         Grid size (nz, ny, nx).
+    volume_fraction : float, default 0.5
+        Target volume fraction of the phase 1.
     k0 : array-like, default [6.0, 6.0, 6.0]
-        Center wavenumber in cycles per domain (not angular) for each axis [k0_v3, k0_v2, k0_v1].
+        Center wavenumber in cycles per domain (not angular) for each axis [k0_1, k0_2, k0_3].
     bandwidth : array-like, default [0.6, 0.6, 0.6]
-        Relative Gaussian width (fraction of k0) for each axis [bw_v3, bw_v2, bw_v1].
-        Use same values for isotropic bandwidth, different values for anisotropic.
-    exponent : float
-        High-k rolloff exponent (larger -> stronger suppression)
-    seed : int, optional
-        RNG seed for reproducibility
+        Relative Gaussian width (fraction of k0) for each axis [bw_1, bw_2, bw_3].
+    exponent : float, default 2.0
+        High-k rolloff exponent (larger -> stronger suppression of high frequencies).
+    seed : int, default 42
+        RNG seed for reproducibility.
     L : array-like, default [1.0, 1.0, 1.0]
-        Physical dimensions [Lz, Ly, Lx].
-    anisotropy_axes : 2-tuple or list of vectors, default [(1,0,0), (0,1,0)]
-        Define a preferred coordinate system (v1, v2) for oblique orientations.
-        v1, v2 should be orthogonal unit vectors defining preferred directions.
+    rotation_matrix : ndarray (ndim x ndim), default identity
+        Orthonormal rotation matrix to apply to k-space coordinates.
+
+    Returns
+    -------
+    image : ndarray (uint8) Binary microstructure.
     """
     np.random.seed(seed)
     ndim = len(shape)
@@ -47,10 +48,8 @@ def generate_spinodal_microstructure(
     k0_arr = np.array(k0, dtype=np.float32)
     bw_arr = np.array(bandwidth, dtype=np.float32)
 
-    np.random.seed(seed)
-    noise = np.random.randn(*shape).astype(
-        np.float32, copy=False
-    )  # Generate noise (resolution dependent)
+    # Generate noise (resolution dependent)
+    noise = np.random.randn(*shape).astype(np.float32, copy=False)
     noise_hat = fftn(noise, workers=-1, overwrite_x=True)
 
     # Build k-space grids
@@ -60,14 +59,8 @@ def generate_spinodal_microstructure(
     ]
     grids = np.meshgrid(*grids, indexing="ij")
 
-    # Build rotation matrix: R = [v1, v2, v3]^T
-    v1, v2 = anisotropy_axes
-    v1 = np.array(v1, dtype=np.float32)
-    v2 = np.array(v2, dtype=np.float32)
-    v3 = np.cross(v1, v2)
-    R = np.array([v1, v2, v3], dtype=np.float32)
-
     # Rotate k-space coordinates: k_rotated = R @ k_original
+    R = np.array(rotation_matrix, dtype=np.float32)
     grids = list(np.einsum("ij,jklm->iklm", R, np.array(grids)))
 
     # Compute effective radial wavenumber using ellipsoidal normalization
@@ -116,13 +109,9 @@ if __name__ == "__main__":
     exponent = 10.0
     seed = 42
     volume_fraction = 0.5
+    euler_angles = [np.pi / 4, np.pi / 4, np.pi / 4]
 
-    v1 = np.array([1.0, 1.0, 1.0])
-    v1 /= np.linalg.norm(v1)
-    v2 = np.array([1.0, -1.0, 0.0])
-    v2 /= np.linalg.norm(v2)
-    anisotropy_axes = (v1, v2)
-
+    R = Rotation.from_euler("xyz", euler_angles).as_matrix()
     start_time = time()
     img = generate_spinodal_microstructure(
         N,
@@ -132,6 +121,7 @@ if __name__ == "__main__":
         exponent=exponent,
         seed=seed,
         L=L,
+        rotation_matrix=R,
     )
     end_time = time()
     print(
@@ -140,12 +130,12 @@ if __name__ == "__main__":
 
     MS = MicrostructureImage(image=img, L=L)
     MS.write(
-        h5_filename="data/spinodal_spectral.h5",
-        dset_name="/spinodal_spectral",
+        h5_filename="data/spinodoids.h5",
+        dset_name="/dset_0",
         order="zyx",
     )
     write_xdmf(
-        h5_filepath="data/spinodal_spectral.h5",
-        xdmf_filepath="data/spinodal_spectral.xdmf",
+        h5_filepath="data/spinodoids.h5",
+        xdmf_filepath="data/spinodoids.xdmf",
         microstructure_length=L[::-1],
     )
