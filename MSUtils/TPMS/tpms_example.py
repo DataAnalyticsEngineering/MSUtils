@@ -9,17 +9,25 @@ result to HDF5.
 from MSUtils.TPMS.tpms import TPMS
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.TPMS.tpms_functions import (
+    gyroid,
+    schwarz_p,
+    diamond,
+    neovius,
+    iwp,
+    lidinoid,
+)
 
 if __name__ == "__main__":
     N = 256, 256, 256
     L = 1.0, 1.0, 1.0
-    tpms_type = "iwp"
     h5_filename = "data/tpms_opt.h5"
     unitcell_frequency = (1, 1, 1)
     invert = False
+    tpms_type = "iwp"
 
     tpms = TPMS(
-        tpms_type=tpms_type,
+        func=iwp,
         resolution=N,
         L=L,
         unitcell_frequency=unitcell_frequency,
@@ -27,7 +35,7 @@ if __name__ == "__main__":
         mode="shell",
         shell_thickness=0.1,
     )
-    MS = MicrostructureImage(image=tpms.image)
+    MS = MicrostructureImage(image=tpms.image, L=L)
     print(f"Volume fraction of phase 0: {MS.volume_fractions[0]:.4f}")
     print(f"Volume fraction of phase 1: {MS.volume_fractions[1]:.4f}")
     MS.write(
@@ -38,9 +46,9 @@ if __name__ == "__main__":
     )
 
     # Optimize shell thickness to achieve target volume fraction for phase 1
-    vf_target_phase_1 = 0.2
+    vf_target_phase_1 = 0.3
     threshold_opt, thickness_opt = tpms.find_threshold_for_volume_fraction(
-        vf_target_phase_1, optimize="shell_thickness"
+        vf_target_phase_1,
     )
     print(
         f"New threshold and shell thickness for volume fraction {vf_target_phase_1}: {threshold_opt}, {thickness_opt}"
@@ -48,7 +56,7 @@ if __name__ == "__main__":
 
     # Regenerate TPMS with optimized parameters
     tpms = TPMS(
-        tpms_type=tpms_type,
+        func=iwp,
         resolution=N,
         L=L,
         unitcell_frequency=unitcell_frequency,
@@ -57,7 +65,7 @@ if __name__ == "__main__":
         threshold=threshold_opt,
         shell_thickness=thickness_opt,
     )
-    MS = MicrostructureImage(image=tpms.image)
+    MS = MicrostructureImage(image=tpms.image, L=L)
     print(f"Volume fraction of phase 0: {MS.volume_fractions[0]:.4f}")
     print(f"Volume fraction of phase 1: {MS.volume_fractions[1]:.4f}")
     MS.write(

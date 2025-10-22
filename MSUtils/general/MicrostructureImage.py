@@ -163,6 +163,7 @@ class MicrostructureImage:
             permuted_image = self.image
         elif order == "zyx":
             permuted_image = self.image.transpose(2, 1, 0)
+            self.L = self.L[::-1]
         else:
             raise ValueError("Invalid order specified. Use 'xyz' or 'zyx'.")
 
