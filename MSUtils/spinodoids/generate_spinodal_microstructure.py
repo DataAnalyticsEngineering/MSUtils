@@ -10,12 +10,11 @@ from MSUtils.general.h52xdmf import write_xdmf
 def generate_spinodal_microstructure(
     shape: Union[Tuple[int, int, int], List[int]],
     volume_fraction: float = 0.5,
-    k0: Union[Tuple[float, float, float], List[float]] = (6.0, 6.0, 6.0),
-    bandwidth: Union[Tuple[float, float, float], List[float]] = (0.6, 0.6, 0.6),
-    exponent: float = 2.0,
+    wavenumber: Union[Tuple[float, float, float], List[float]] = (6.0, 6.0, 6.0),
+    sigma: float = 0.5,
     seed: int = 42,
     L: Union[Tuple[float, float, float], List[float]] = (1.0, 1.0, 1.0),
-    rotation_matrix: Optional[np.ndarray] = np.eye(3, dtype=np.float32),
+    rotation_matrix: Optional[np.ndarray] = None,
 ):
     """Generate a binary spinodal microstructure via spectral filtering.
 
@@ -24,29 +23,31 @@ def generate_spinodal_microstructure(
     shape : tuple or list
         Grid size (nz, ny, nx).
     volume_fraction : float, default 0.5
-        Target volume fraction of the phase 1.
-    k0 : array-like, default [6.0, 6.0, 6.0]
-        Center wavenumber in cycles per domain (not angular) for each axis [k0_1, k0_2, k0_3].
-    bandwidth : array-like, default [0.6, 0.6, 0.6]
-        Relative Gaussian width (fraction of k0) for each axis [bw_1, bw_2, bw_3].
-    exponent : float, default 2.0
-        High-k rolloff exponent (larger -> stronger suppression of high frequencies).
+        Target volume fraction of phase 1.
+    wavenumber : array-like, default [6.0, 6.0, 6.0]
+        Center wavenumber in cycles per domain for each axis [k1, k2, k3].
+    sigma : float, default 0.5
+        Standard deviation of Gaussian bandpass filter (in normalized k-space).
     seed : int, default 42
-        RNG seed for reproducibility.
+        Random seed for reproducibility.
     L : array-like, default [1.0, 1.0, 1.0]
-    rotation_matrix : ndarray (ndim x ndim), default identity
-        Orthonormal rotation matrix to apply to k-space coordinates.
+        Physical domain dimensions [Lx, Ly, Lz].
+    rotation_matrix : ndarray (3x3), optional
+        Orthonormal rotation matrix for orienting anisotropic features.
+        If None, uses identity (no rotation).
 
     Returns
     -------
-    image : ndarray (uint8) Binary microstructure.
+    image : ndarray (uint8)
+        Binary microstructure with values 0 and 1.
     """
     np.random.seed(seed)
     ndim = len(shape)
     L = np.array(L, dtype=np.float32)
     dx_arr = L / np.array(shape, dtype=np.float32)
-    k0_arr = np.array(k0, dtype=np.float32)
-    bw_arr = np.array(bandwidth, dtype=np.float32)
+    wavenumber_arr = np.array(wavenumber, dtype=np.float32)
+    if rotation_matrix is None:
+        rotation_matrix = np.eye(ndim, dtype=np.float32)
 
     # Generate noise (resolution dependent)
     noise = np.random.randn(*shape).astype(np.float32, copy=False)
@@ -65,25 +66,18 @@ def generate_spinodal_microstructure(
 
     # Compute effective radial wavenumber using ellipsoidal normalization
     k2_normalized = sum(
-        (grids[i] / ((np.float32(2.0 * np.pi) * k0_arr[i]) / L[i])) ** 2
+        (grids[i] / ((np.float32(2.0 * np.pi) * wavenumber_arr[i]) / L[i])) ** 2
         for i in range(ndim)
     )
     k = np.sqrt(k2_normalized)
-    k0_ref = np.float32(1.0)  # Reference wavenumber is 1 after normalization
 
     del grids
 
-    # Bandpass filter
-    # Use mean bandwidth for the Gaussian envelope
-    sigma = np.float32(np.mean(bw_arr) * k0_ref)
-    k_diff = k - k0_ref
-    filter_amp = np.exp(-0.5 * (k_diff / sigma) ** 2)
+    # Gaussian bandpass filter centered at k=1 (in normalized space)
+    k_diff = k - np.float32(1.0)
+    filter_amp = np.exp(-0.5 * (k_diff / np.float32(sigma)) ** 2)
 
-    # High-k rolloff (in-place multiplication)
-    k_ratio = k / k0_ref
-    filter_amp *= 1.0 / (1.0 + k_ratio**exponent)
-
-    del k, k_diff, k_ratio
+    del k, k_diff
 
     # Apply filter in-place
     noise_hat *= filter_amp
@@ -104,21 +98,19 @@ if __name__ == "__main__":
 
     N = [256, 256, 256]
     L = [1.0, 1.0, 1.0]
-    k0 = [5.0, 20.0, 20.0]
-    bandwidth = [0.1, 0.1, 0.1]
-    exponent = 10.0
+    wavenumber = [20.0, 20.0, 20.0]
+    sigma = 0.01
     seed = 42
     volume_fraction = 0.5
-    euler_angles = [np.pi / 4, np.pi / 4, np.pi / 4]
+    euler_angles = [0, 0, 0]
 
     R = Rotation.from_euler("xyz", euler_angles).as_matrix()
     start_time = time()
     img = generate_spinodal_microstructure(
         N,
         volume_fraction=volume_fraction,
-        k0=k0,
-        bandwidth=bandwidth,
-        exponent=exponent,
+        wavenumber=wavenumber,
+        sigma=sigma,
         seed=seed,
         L=L,
         rotation_matrix=R,
