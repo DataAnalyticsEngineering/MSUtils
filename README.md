@@ -44,9 +44,6 @@ These modules produce periodic voxelized microstructures (numpy arrays / HDF5 da
   - [lattice_definitions.py](MSUtils/lattices/lattice_definitions.py): Unit-cell vertex + edge definitions for many lattices (BCC, FCC, octet, auxetic, etc.).
   - [lattice_image.py](MSUtils/lattices/lattice_image.py): Draw struts for lattice unit-cells onto a voxel grid.
 
-- Textile based microstructures: ([MSUtils/TexGen/](MSUtils/TexGen/))
-  - Example scripts demonstrating how to generate and export [TexGen](https://texgen.sourceforge.io/index.php/Main_Page) models to VTU, then use [vtk2h5.py](MSUtils/general/vtk2h5.py) to get HDF5 datasets of textile based microstructures.
-
 ## Microstructure utilities
 
 Utilities for file I/O, conversions, and practical helpers.
