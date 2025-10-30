@@ -5,7 +5,7 @@ description = "Microstructure Utilities by Data Analytics in Engineering (DAE) g
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 
 [dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.10,<3.14"
 
 [build-system]
 requires = ["hatchling"]
