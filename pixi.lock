@@ -8269,7 +8269,7 @@ packages:
 - pypi: ./
   name: msutils
   version: 0.1.0
-  sha256: 042f84f48c3455f3f9eafe8dc5a758863a0ddbcd2f719eb563edd6274c1cd409
+  sha256: 894d8de9816e05624152448c358721e003719ed0b66f9a37460bd69afef78bef
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/multidict-6.6.3-pyh62beb40_0.conda
   sha256: c4257649d1be3d19a97213457032073737cd3179bd0ed3bd2b9885955d11f6b8
