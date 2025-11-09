@@ -54,8 +54,8 @@ def generate_linear_load_paths(
     # check the constraints
     traces = paths[..., :3].sum(axis=-1)
     devs = paths - traces[..., None] / 3.0 * I_mandel
-    assert np.all(np.abs(traces) <= max_volumetric_strain + 1e-12)
-    assert np.all(np.linalg.norm(devs, axis=-1) <= max_deviatoric_strain + 1e-12)
+    assert np.all(np.abs(traces) <= vol_max + 1e-12)
+    assert np.all(np.linalg.norm(devs, axis=-1) <= dev_max + 1e-12)
 
     return paths
 
@@ -81,7 +81,7 @@ def dump_load_paths_to_json(
     Parameters
     ----------
     paths : (N, S, 6) array
-        The N×S×6 strain paths.
+        The N x S x 6 strain paths.
     filename : str
         Output file name.
     include_zero_step : bool
