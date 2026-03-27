@@ -39,7 +39,7 @@ pre-commit = ">=4.5.1,<5"
 pyvista = ">=0.47.1,<0.48"
 meshio = ">=5.3.5,<6"
 nbformat = ">=5.10.4,<6"
-pyrecest = "0.9.*"
+pyrecest = ">=1.0.1,<2"
 
 
 [tool.pixi.environments]
