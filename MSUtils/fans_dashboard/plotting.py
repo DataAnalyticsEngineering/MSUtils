@@ -2,36 +2,40 @@ import numpy as np
 import shutil
 import matplotlib.pyplot as plt
 
+
 def setup_mpl_style(fontsize=12):
-    
+
     use_tex = shutil.which("latex") is not None
 
-    plt.rcParams.update({
-        "text.usetex": use_tex,
-        "text.latex.preamble": r"\usepackage{amsmath}\usepackage{amssymb}",
-        "font.size": fontsize,
-        "axes.labelsize": fontsize,
-        "axes.titlesize": fontsize,
-        "xtick.labelsize": fontsize,
-        "ytick.labelsize": fontsize,
-        "legend.fontsize": fontsize,
-        "figure.titlesize": fontsize,
-        "font.family": "serif",
-        "mathtext.fontset": "cm",
-        "axes.linewidth": 0.8,
-        "xtick.direction": "out",
-        "ytick.direction": "out",
-        "xtick.major.width": 0.8,
-        "ytick.major.width": 0.8,
-        "xtick.minor.width": 0.6,
-        "ytick.minor.width": 0.6,
-        "xtick.major.size": 3.5,
-        "ytick.major.size": 3.5,
-        "xtick.minor.size": 2.0,
-        "ytick.minor.size": 2.0,
-        "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.02,
-    })
+    plt.rcParams.update(
+        {
+            "text.usetex": use_tex,
+            "text.latex.preamble": r"\usepackage{amsmath}\usepackage{amssymb}",
+            "font.size": fontsize,
+            "axes.labelsize": fontsize,
+            "axes.titlesize": fontsize,
+            "xtick.labelsize": fontsize,
+            "ytick.labelsize": fontsize,
+            "legend.fontsize": fontsize,
+            "figure.titlesize": fontsize,
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "axes.linewidth": 0.8,
+            "xtick.direction": "out",
+            "ytick.direction": "out",
+            "xtick.major.width": 0.8,
+            "ytick.major.width": 0.8,
+            "xtick.minor.width": 0.6,
+            "ytick.minor.width": 0.6,
+            "xtick.major.size": 3.5,
+            "ytick.major.size": 3.5,
+            "xtick.minor.size": 2.0,
+            "ytick.minor.size": 2.0,
+            "savefig.bbox": "tight",
+            "savefig.pad_inches": 0.02,
+        }
+    )
+
 
 def plot_subplots(
     data1,
@@ -130,7 +134,9 @@ def plot_subplots(
         if isinstance(arg, str):
             return [arg] * n
         if len(arg) != n:
-            raise ValueError(f"The length of {name} must match the number of components ({n}).")
+            raise ValueError(
+                f"The length of {name} must match the number of components ({n})."
+            )
         return list(arg)
 
     data1 = _as_2d(data1, "data1")
@@ -148,12 +154,16 @@ def plot_subplots(
     if labels_x is None:
         labels_x = [""] * n_components
     elif len(labels_x) != n_components:
-        raise ValueError(f"The length of labels_x must match the number of components ({n_components}).")
+        raise ValueError(
+            f"The length of labels_x must match the number of components ({n_components})."
+        )
 
     if labels_y is None:
         labels_y = [""] * n_components
     elif len(labels_y) != n_components:
-        raise ValueError(f"The length of labels_y must match the number of components ({n_components}).")
+        raise ValueError(
+            f"The length of labels_y must match the number of components ({n_components})."
+        )
 
     if subplot_titles is None:
         subplot_titles = [f"Component {i + 1}" for i in range(n_components)]
@@ -164,7 +174,9 @@ def plot_subplots(
 
     linecolor = _normalize(linecolor, n_components, "linecolor", "C0")
     markercolor = _normalize(markercolor, n_components, "markercolor", "C0")
-    markerfacecolor = _normalize(markerfacecolor, n_components, "markerfacecolor", "white")
+    markerfacecolor = _normalize(
+        markerfacecolor, n_components, "markerfacecolor", "white"
+    )
     marker_list = _normalize(marker, n_components, "marker", "o")
     linestyle_list = _normalize(linestyle, n_components, "linestyle", "--")
 
