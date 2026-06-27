@@ -200,41 +200,6 @@ def plot_subplots(
         elif axes.ndim != 2:
             raise ValueError("axes must be 1D or 2D array-like.")
 
-    if subplot_titles is None:
-        subplot_titles = [f"Component {i + 1}" for i in range(n_components)]
-    elif len(subplot_titles) != n_components:
-        raise ValueError(
-            f"The length of subplot_titles must match the number of components ({n_components})."
-        )
-
-    linecolor = _normalize(linecolor, n_components, "linecolor", "C0")
-    markercolor = _normalize(markercolor, n_components, "markercolor", "C0")
-    markerfacecolor = _normalize(
-        markerfacecolor, n_components, "markerfacecolor", "white"
-    )
-    marker_list = _normalize(marker, n_components, "marker", "o")
-    linestyle_list = _normalize(linestyle, n_components, "linestyle", "--")
-
-    setup_mpl_style(fontsize=fontsize)
-
-    if fig is None or axes is None:
-        if figsize is None:
-            figsize = (3.2 * ncols, 2.8 * nrows)
-        fig, axes = plt.subplots(
-            nrows=nrows,
-            ncols=ncols,
-            figsize=figsize,
-            sharex=sharex,
-            sharey=sharey,
-            squeeze=False,
-        )
-    else:
-        axes = np.asarray(axes)
-        if axes.ndim == 1:
-            axes = axes.reshape(nrows, ncols)
-        elif axes.ndim != 2:
-            raise ValueError("axes must be 1D or 2D array-like.")
-
     flat_axes = axes.ravel()
 
     for i in range(n_components):
