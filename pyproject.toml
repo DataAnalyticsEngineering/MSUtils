@@ -26,24 +26,20 @@ args = ["file", { arg = "extra", default = "" }]
 cmd  = "cd \"$INIT_CWD\" && python -m MSUtils.general.h52xdmf {{ extra }} {{ file }}"
 
 [tool.pixi.dependencies]
-python = "3.13.*"
-numpy = ">=2.4.3,<3"
+numpy = ">=2.5.0,<3"
 h5py = ">=3.16.0,<4"
-scipy = ">=1.17.1,<2"
-matplotlib = ">=3.10.8,<4"
+scipy = ">=1.18.0,<2"
+matplotlib = ">=3.11.0,<4"
 scikit-image = ">=0.26.0,<0.27"
-lxml = ">=6.0.2,<7"
-plotly = ">=6.6.0,<7"
+lxml = ">=6.1.1,<7"
+plotly = ">=6.8.0,<7"
 sympy = ">=1.14.0,<2"
-ipykernel = ">=7.2.0,<8"
-pre-commit = ">=4.5.1,<5"
-pyvista = ">=0.47.1,<0.48"
+ipykernel = ">=7.3.0,<8"
+pre-commit = ">=4.6.0,<5"
+pyvista = ">=0.48.4,<0.49"
 meshio = ">=5.3.5,<6"
 nbformat = ">=5.10.4,<6"
-pyrecest = "0.9.*"
-texgen = { url = "file:///nvmepool/home/keshav/MSUtils/.pixi/texgen-conda/texgen-3.14.0-py313hc553dc1_0.conda" }
-pytorch = ">=2.10.0,<3"
-
+pyrecest = ">=2.2.2,<3"
 
 
 [tool.pixi.environments]

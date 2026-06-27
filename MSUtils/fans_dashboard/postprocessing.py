@@ -61,7 +61,7 @@ def compute_rank2tensor_measures(tensor_matrix, measures_to_compute=None):
                 (deviatoric[:, 0] - deviatoric[:, 1]) ** 2
                 + (deviatoric[:, 1] - deviatoric[:, 2]) ** 2
                 + (deviatoric[:, 2] - deviatoric[:, 0]) ** 2
-                + 6
+                + 3
                 * (
                     deviatoric_shear[:, 0] ** 2
                     + deviatoric_shear[:, 1] ** 2
@@ -78,9 +78,12 @@ def compute_rank2tensor_measures(tensor_matrix, measures_to_compute=None):
             tensor_matrix[:, 0] * tensor_matrix[:, 1]
             + tensor_matrix[:, 1] * tensor_matrix[:, 2]
             + tensor_matrix[:, 2] * tensor_matrix[:, 0]
-            - tensor_matrix[:, 3] ** 2
-            - tensor_matrix[:, 4] ** 2
-            - tensor_matrix[:, 5] ** 2
+            - 0.5
+            * (
+                tensor_matrix[:, 3] ** 2
+                + tensor_matrix[:, 4] ** 2
+                + tensor_matrix[:, 5] ** 2
+            )
         )
         if "full_tensor" not in locals():
             full_tensor = Mandel2Full(tensor_matrix)
@@ -92,7 +95,7 @@ def compute_rank2tensor_measures(tensor_matrix, measures_to_compute=None):
     # Compute J1, J2, J3 invariants if requested
     if "J_invariants" in measures_to_compute or "lode_angle" in measures_to_compute:
         J1 = np.sum(deviatoric_tensor[:, :3], axis=1)
-        J2 = 0.5 * np.sum(deviatoric**2 + 2 * deviatoric_shear**2, axis=1)
+        J2 = 0.5 * np.sum(deviatoric_tensor**2, axis=1)
         full_deviatoric_tensor = Mandel2Full(deviatoric_tensor)
         J3 = np.linalg.det(full_deviatoric_tensor)
         result["J_invariants"] = np.stack([J1, J2, J3], axis=-1).reshape(
@@ -119,7 +122,7 @@ def compute_rank2tensor_measures(tensor_matrix, measures_to_compute=None):
     # Lode angle calculation
     if "lode_angle" in measures_to_compute:
         if "J2" not in locals():  # Compute J2 if not already computed
-            J2 = 0.5 * np.sum(deviatoric**2 + 2 * deviatoric_shear**2, axis=1)
+            J2 = 0.5 * np.sum(deviatoric_tensor**2, axis=1)
         if "J3" not in locals():  # Compute J3 if not already computed
             full_deviatoric_tensor = Mandel2Full(deviatoric_tensor)
             J3 = np.linalg.det(full_deviatoric_tensor)

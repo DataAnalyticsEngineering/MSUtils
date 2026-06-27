@@ -6,6 +6,7 @@ Then, it optimizes the shell thickness to achieve a target volume fraction of 0.
 regenerates the microstructure with optimized parameters, recomputes volume fractions, and writes the optimized
 result to HDF5.
 """
+
 from MSUtils.TPMS.tpms import TPMS
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.general.h52xdmf import write_xdmf
