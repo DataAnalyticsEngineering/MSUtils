@@ -229,7 +229,7 @@ def write_xdmf(
         print_verbose(f"Wrote XDMF file: {xdmf_filepath}.")
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description=(
             "Convert HDF5 files with 3D spaciotemporal microstructure data to XDMF representation for visualization.\n\n"
@@ -283,7 +283,7 @@ if __name__ == "__main__":
         ),
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     for h5_filepath in args.h5_filepath:
         write_xdmf(
@@ -294,3 +294,9 @@ if __name__ == "__main__":
             args.time_keyword,
             args.verbose,
         )
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

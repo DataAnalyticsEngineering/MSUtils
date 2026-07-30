@@ -1,6 +1,40 @@
 import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import shutil
+import matplotlib.pyplot as plt
+
+
+def setup_mpl_style(fontsize=12):
+
+    use_tex = shutil.which("latex") is not None
+
+    plt.rcParams.update(
+        {
+            "text.usetex": use_tex,
+            "text.latex.preamble": r"\usepackage{amsmath}\usepackage{amssymb}",
+            "font.size": fontsize,
+            "axes.labelsize": fontsize,
+            "axes.titlesize": fontsize,
+            "xtick.labelsize": fontsize,
+            "ytick.labelsize": fontsize,
+            "legend.fontsize": fontsize,
+            "figure.titlesize": fontsize,
+            "font.family": "serif",
+            "mathtext.fontset": "cm",
+            "axes.linewidth": 0.8,
+            "xtick.direction": "out",
+            "ytick.direction": "out",
+            "xtick.major.width": 0.8,
+            "ytick.major.width": 0.8,
+            "xtick.minor.width": 0.6,
+            "ytick.minor.width": 0.6,
+            "xtick.major.size": 3.5,
+            "ytick.major.size": 3.5,
+            "xtick.minor.size": 2.0,
+            "ytick.minor.size": 2.0,
+            "savefig.bbox": "tight",
+            "savefig.pad_inches": 0.02,
+        }
+    )
 
 
 def plot_subplots(
@@ -12,78 +46,111 @@ def plot_subplots(
     title="",
     nrows=None,
     ncols=None,
-    linewidth=1,
-    markersize=4,
+    linewidth=1.4,
+    markersize=4.5,
     linecolor=None,
     markercolor=None,
     fontsize=12,
     fig=None,
+    axes=None,
+    figsize=None,
+    sharex=False,
+    sharey=False,
+    marker="o",
+    linestyle="--",
+    grid=True,
+    grid_alpha=0.3,
+    grid_linestyle="--",
+    grid_linewidth=0.5,
+    minor_ticks=True,
+    markerfacecolor="white",
+    markeredgewidth=1.0,
+    fillstyle="full",
+    hide_unused_axes=True,
+    tight_layout=True,
 ):
     """
-    Plot a grid of subplots using Plotly, handling both single-component (scalar vs scalar) and multi-component data.
+    Plot a grid of subplots using Matplotlib.
 
-    Parameters:
-    - data1: numpy array, first set of data to plot (e.g., strain, time) with shape (n_datapoints, n_plots)
-    - data2: numpy array, second set of data to plot (e.g., stress) with shape (n_datapoints, n_plots)
-    - labels_x: list of strings, labels for the x axes of each subplot (optional, default=None)
-    - labels_y: list of strings, labels for the y axes of each subplot (optional, default=None)
-    - subplot_titles: list of strings, titles for each subplot (optional, default=None)
-    - title: string, title of the overall plot
-    - nrows: int, number of rows in the subplot grid (optional)
-    - ncols: int, number of columns in the subplot grid (optional)
-    - linewidth: int, line width for the plots (optional, default=1)
-    - markersize: int, size of the markers (optional, default=4)
-    - linecolor: list of strings, colors of the lines for each subplot (optional, default=None, all blue)
-    - markercolor: list of strings, colors of the markers for each subplot (optional, default=None, all blue)
-    - fontsize: int, font size for axis labels, subplot titles, and tick labels (optional, default=12)
-    - fig: existing Plotly figure to overlay the new subplots (optional, default=None, creates a new figure)
+    Parameters
+    ----------
+    data1, data2 : np.ndarray
+        Arrays of shape (n_points,) or (n_points, n_components).
+    labels_x, labels_y : list[str], optional
+        Axis labels per component.
+    subplot_titles : list[str], optional
+        Titles per subplot.
+    title : str, optional
+        Figure title.
+    nrows, ncols : int, optional
+        Grid dimensions. Auto-chosen if omitted.
+    linewidth, markersize : float, optional
+        Line and marker sizes.
+    linecolor, markercolor : str or list[str], optional
+        Per-component colors.
+    fontsize : int, optional
+        Base font size.
+    fig, axes : optional
+        Existing figure/axes for overlaying.
+    figsize : tuple, optional
+        Figure size in inches.
+    sharex, sharey : bool, optional
+        Shared axes.
+    marker, linestyle : str or list[str], optional
+        Marker/linestyle per component.
+    grid : bool, optional
+        Whether to draw grid.
+    grid_alpha, grid_linestyle, grid_linewidth : optional
+        Grid style.
+    minor_ticks : bool, optional
+        Enable minor ticks.
+    markerfacecolor : str or list[str], optional
+        Marker face color(s). Default is white for hollow markers.
+    markeredgewidth : float, optional
+        Marker edge width.
+    fillstyle : str, optional
+        Marker fillstyle.
+    hide_unused_axes : bool, optional
+        Hide empty subplot slots.
+    tight_layout : bool, optional
+        Apply tight_layout at the end.
+
+    Returns
+    -------
+    fig, axes
     """
-    # Validate data shapes
-    if not isinstance(data1, np.ndarray) or not isinstance(data2, np.ndarray):
-        raise ValueError("data1 and data2 must be numpy arrays.")
 
-    if data1.shape[0] != data2.shape[0]:
-        raise ValueError(
-            "data1 and data2 must have the same number of data points (rows)."
-        )
+    def _as_2d(arr, name):
+        arr = np.asarray(arr)
+        if arr.ndim == 1:
+            arr = arr[:, None]
+        elif arr.ndim != 2:
+            raise ValueError(f"{name} must be 1D or 2D.")
+        return arr
 
-    if data1.shape[1] != data2.shape[1]:
-        raise ValueError(
-            "data1 and data2 must have the same number of components (columns)."
-        )
+    def _normalize(arg, n, name, default):
+        if arg is None:
+            return [default] * n
+        if isinstance(arg, str):
+            return [arg] * n
+        if len(arg) != n:
+            raise ValueError(
+                f"The length of {name} must match the number of components ({n})."
+            )
+        return list(arg)
 
-    # Set the number of components based on data shape
+    data1 = _as_2d(data1, "data1")
+    data2 = _as_2d(data2, "data2")
+
+    if data1.shape != data2.shape:
+        raise ValueError("data1 and data2 must have identical shape.")
+
     n_components = data1.shape[1]
 
-    # Initialize linecolor and markercolor lists if not provided
-    if linecolor is None:
-        linecolor = ["blue"] * n_components
-    elif len(linecolor) != n_components:
-        raise ValueError(
-            f"The length of linecolor must match the number of components ({n_components})."
-        )
-
-    if markercolor is None:
-        markercolor = ["blue"] * n_components
-    elif len(markercolor) != n_components:
-        raise ValueError(
-            f"The length of markercolor must match the number of components ({n_components})."
-        )
-
-    # If nrows or ncols is not specified, determine an optimal grid layout
     if nrows is None or ncols is None:
         nrows = int(np.ceil(np.sqrt(n_components)))
         ncols = int(np.ceil(n_components / nrows))
 
-    # Handle subplot titles
-    if subplot_titles is None:
-        subplot_titles = [f"Component {i+1}" for i in range(n_components)]
-    elif len(subplot_titles) != n_components:
-        raise ValueError(
-            f"The length of subplot_titles must match the number of components ({n_components})."
-        )
-
-    # Handle labels_x and labels_y
     if labels_x is None:
         labels_x = [""] * n_components
     elif len(labels_x) != n_components:
@@ -98,88 +165,84 @@ def plot_subplots(
             f"The length of labels_y must match the number of components ({n_components})."
         )
 
-    # Create the subplot figure if not provided
-    if fig is None:
-        fig = make_subplots(rows=nrows, cols=ncols, subplot_titles=subplot_titles)
-
-    # Add traces for each component
-    for i in range(n_components):
-        row = i // ncols + 1
-        col = i % ncols + 1
-        fig.add_trace(
-            go.Scatter(
-                x=data1[:, i],
-                y=data2[:, i],
-                mode="lines+markers",
-                marker=dict(symbol="x", size=markersize, color=markercolor[i]),
-                line=dict(width=linewidth, color=linecolor[i]),
-                name=f"Component {i+1}",
-            ),
-            row=row,
-            col=col,
+    if subplot_titles is None:
+        subplot_titles = [f"Component {i + 1}" for i in range(n_components)]
+    elif len(subplot_titles) != n_components:
+        raise ValueError(
+            f"The length of subplot_titles must match the number of components ({n_components})."
         )
 
-        # Update axes with text labels
-        fig.update_xaxes(
-            title_text=labels_x[i],
-            row=row,
-            col=col,
-            showgrid=True,
-            mirror=True,
-            ticks="inside",
-            tickwidth=2,
-            ticklen=6,
-            title_font=dict(size=fontsize),
-            tickfont=dict(size=fontsize),
-            automargin=True,
-        )
-        fig.update_yaxes(
-            title_text=labels_y[i],
-            row=row,
-            col=col,
-            showgrid=True,
-            mirror=True,
-            ticks="inside",
-            tickwidth=2,
-            ticklen=6,
-            title_font=dict(size=fontsize),
-            tickfont=dict(size=fontsize),
-            automargin=True,
-        )
-
-    # Update layout with the overall plot title and styling
-    fig.update_layout(
-        height=500,
-        width=800,
-        title_text=title,
-        title_font=dict(size=fontsize),
-        showlegend=False,  # Legends removed
-        template="plotly_white",
-        margin=dict(l=50, r=50, t=50, b=50),  # Adjust margins to prevent overlap
-        title_x=0.5,
-        autosize=False,
+    linecolor = _normalize(linecolor, n_components, "linecolor", "C0")
+    markercolor = _normalize(markercolor, n_components, "markercolor", "C0")
+    markerfacecolor = _normalize(
+        markerfacecolor, n_components, "markerfacecolor", "white"
     )
+    marker_list = _normalize(marker, n_components, "marker", "o")
+    linestyle_list = _normalize(linestyle, n_components, "linestyle", "--")
 
-    # Add a box outline around all subplots
-    for i in range(1, nrows * ncols + 1):
-        fig.update_xaxes(
-            showline=True,
-            linewidth=2,
-            linecolor="black",
-            row=(i - 1) // ncols + 1,
-            col=(i - 1) % ncols + 1,
+    setup_mpl_style(fontsize=fontsize)
+
+    if fig is None or axes is None:
+        if figsize is None:
+            figsize = (3.2 * ncols, 2.8 * nrows)
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=figsize,
+            sharex=sharex,
+            sharey=sharey,
+            squeeze=False,
         )
-        fig.update_yaxes(
-            showline=True,
-            linewidth=2,
-            linecolor="black",
-            row=(i - 1) // ncols + 1,
-            col=(i - 1) % ncols + 1,
+    else:
+        axes = np.asarray(axes)
+        if axes.ndim == 1:
+            axes = axes.reshape(nrows, ncols)
+        elif axes.ndim != 2:
+            raise ValueError("axes must be 1D or 2D array-like.")
+
+    flat_axes = axes.ravel()
+
+    for i in range(n_components):
+        ax = flat_axes[i]
+
+        ax.plot(
+            data1[:, i],
+            data2[:, i],
+            linestyle=linestyle_list[i],
+            linewidth=linewidth,
+            marker=marker_list[i],
+            markersize=markersize,
+            markerfacecolor=markerfacecolor[i],
+            markeredgecolor=markercolor[i],
+            markeredgewidth=markeredgewidth,
+            fillstyle=fillstyle,
+            color=linecolor[i],
         )
 
-    # Update subplot titles with the specified fontsize
-    for annotation in fig["layout"]["annotations"]:
-        annotation["font"] = dict(size=fontsize)
+        ax.set_xlabel(labels_x[i], fontsize=fontsize)
+        ax.set_ylabel(labels_y[i], fontsize=fontsize)
+        ax.set_title(subplot_titles[i], fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
 
-    # Return the figure for further customization or overlaying
-    return fig
+        if grid:
+            ax.grid(
+                True,
+                alpha=grid_alpha,
+                linestyle=grid_linestyle,
+                linewidth=grid_linewidth,
+            )
+
+        if minor_ticks:
+            ax.minorticks_on()
+
+    if hide_unused_axes:
+        for j in range(n_components, nrows * ncols):
+            flat_axes[j].set_visible(False)
+
+    if title:
+        fig.suptitle(title, fontsize=fontsize)
+
+    if tight_layout:
+        plt.tight_layout()
+
+    return fig, axes

@@ -1,7 +1,14 @@
 # MSUtils - Microstructure Utilities
 
 <!-- Status & links -->
-[![License](https://img.shields.io/badge/license-LGPL--3.0-blue)](LICENSE)[![Pixi Badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
+<p align="left">
+  <a href="https://prefix.dev/channels/conda-forge/packages/msutils"><img src="https://img.shields.io/github/v/release/DataAnalyticsEngineering/msutils?label=Release&color=004191" alt="GitHub Release"></a>
+  <a href="https://anaconda.org/conda-forge/msutils"><img src="https://anaconda.org/conda-forge/msutils/badges/platforms.svg" alt="Anaconda-Server Badge"></a>
+  <a href="https://anaconda.org/conda-forge/msutils"><img src="https://anaconda.org/conda-forge/msutils/badges/downloads.svg" alt="Anaconda-Server Badge"></a>
+  <a href="https://prefix.dev/channels/conda-forge/packages/msutils"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json" alt="Pixi Badge"></a>
+  <img src="https://img.shields.io/github/last-commit/DataAnalyticsEngineering/msutils" alt="Last commit">
+  <a href="https://github.com/DataAnalyticsEngineering/msutils/blob/main/LICENSE"><img src="https://img.shields.io/github/license/DataAnalyticsEngineering/msutils" alt="License"></a>
+</p>
 
 
 MSUtils is a collection of utilities and scripts for creating, processing and exporting voxelized microstructure data which can be readily used in FFT-based solvers such as [FANS](https://github.com/DataAnalyticsEngineering/FANS).
