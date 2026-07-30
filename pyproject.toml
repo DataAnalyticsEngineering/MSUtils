@@ -1,6 +1,6 @@
 [project]
 name = "MSUtils"
-version = "0.1.0"
+version = "0.1.2"
 description = "Microstructure Utilities by Data Analytics in Engineering (DAE) group, University of Stuttgart"
 authors = [{name = "Sanath Keshav", email = "keshav@mib.uni-stuttgart.de"}]
 
