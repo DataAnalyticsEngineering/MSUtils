@@ -193,7 +193,7 @@ def write_xdmf(
                 grid = ET.SubElement(domain, "Grid", Name=grid_name, GridType="Uniform")
                 subgrid = grid
 
-            topology = ET.SubElement(
+            ET.SubElement(
                 subgrid,
                 "Topology",
                 TopologyType="3DCoRectMesh",

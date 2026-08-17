@@ -1,15 +1,16 @@
-import numpy as np
-from typing import Iterable, Optional, Callable
+from typing import Callable, Iterable, Optional
 
-from MSUtils.general.MicrostructureImage import MicrostructureImage
+import numpy as np
+
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.general.MicrostructureImage import MicrostructureImage
 from MSUtils.TPMS.tpms_functions import (
-    gyroid,
-    schwarz_p,
     diamond,
-    neovius,
+    gyroid,
     iwp,
     lidinoid,
+    neovius,
+    schwarz_p,
 )
 
 

@@ -59,7 +59,6 @@ Utilities for file I/O, conversions, and practical helpers.
   - [MicrostructureImage.py](MSUtils/general/MicrostructureImage.py) - Core class for microstructure data: read/write HDF5 datasets with permute-order handling, metadata, and volume fraction calculation.
   - [ComBoMicrostructureImage.py](MSUtils/general/ComBoMicrostructureImage.py) - Morphologically sound coarse-graining via composite boxels (ComBo) as described in our [paper](https://doi.org/10.1007/s00466-022-02232-4).
   - [resize_image.py](MSUtils/general/resize_image.py) - Resize and smooth 3D labelled voxelized microstructure images to any target image resolution.
-  - [vtk2h5.py](MSUtils/general/vtk2h5.py) - Convert VTI/VTU cell-centered meshes into HDF5 datasets inferred on a regular cell-center grid.
   - [h52xdmf.py](MSUtils/general/h52xdmf.py) - Convert HDF5 datasets into XDMF XML for ParaView. Supports scalar/vector/tensor attributes and time-series handling.
   - [merge_h5_files.py](MSUtils/general/merge_h5_files.py) - Merge multiple HDF5 files into one by recursively copying groups/datasets.
 

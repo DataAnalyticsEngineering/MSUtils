@@ -88,11 +88,9 @@ class ComBoMicrostructureImage:
         """
         Get the normal vector from a supervoxel using the Laplacian on the image.
         """
-        inline_norm = lambda x: np.sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2])
-
-        assert (
-            img.ndim == 3
-        ), "error: expecting 3D ndarray (0--> phase 0; else-->phase 1)"
+        assert img.ndim == 3, (
+            "error: expecting 3D ndarray (0--> phase 0; else-->phase 1)"
+        )
         N = np.array(img.shape)
         l_combi = l * np.array(img.shape)
         w = np.abs(lap_img)
