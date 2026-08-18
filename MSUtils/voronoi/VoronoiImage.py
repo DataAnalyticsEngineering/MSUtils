@@ -43,7 +43,6 @@ class PeriodicVoronoiImage(MicrostructureImage):
                 h5_filename=h5_filename,
                 dset_name=dset_name,
                 image=image,
-                resolution=N,
                 L=L,
             )
             self.compute_volume_fractions()
