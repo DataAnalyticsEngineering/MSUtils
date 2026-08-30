@@ -57,11 +57,12 @@ Utilities for file I/O, conversions, and practical helpers.
 
 - [MSUtils/general/](MSUtils/general/)
   - [MicrostructureImage.py](MSUtils/general/MicrostructureImage.py) - Core class for microstructure data: read/write HDF5 datasets with permute-order handling, metadata, and volume fraction calculation.
-  - [ComBoMicrostructureImage.py](MSUtils/general/ComBoMicrostructureImage.py) - Morphologically sound coarse-graining via composite boxels (ComBo) as described in our [paper](https://doi.org/10.1007/s00466-022-02232-4).
   - [resize_image.py](MSUtils/general/resize_image.py) - Resize and smooth 3D labelled voxelized microstructure images to any target image resolution.
-  - [vtk2h5.py](MSUtils/general/vtk2h5.py) - Convert VTI/VTU cell-centered meshes into HDF5 datasets inferred on a regular cell-center grid.
   - [h52xdmf.py](MSUtils/general/h52xdmf.py) - Convert HDF5 datasets into XDMF XML for ParaView. Supports scalar/vector/tensor attributes and time-series handling.
   - [merge_h5_files.py](MSUtils/general/merge_h5_files.py) - Merge multiple HDF5 files into one by recursively copying groups/datasets.
+
+- [MSUtils/ComBo/](MSUtils/ComBo/)
+  - [ComBoMicrostructureImage.py](MSUtils/ComBo/ComBoMicrostructureImage.py) - Morphologically sound coarse-graining via composite boxels (ComBo) as described in our [paper](https://doi.org/10.1007/s00466-022-02232-4).
 
 - [MSUtils/sampling/](MSUtils/sampling/)
   - [generate_loadpaths.py](MSUtils/sampling/generate_loadpaths.py) - Samples quasi-uniform equal-area directions on the unit hypersphere using the [`LeopardiSampler`](https://github.com/FlorianPfaff/pyRecEst/blob/main/pyrecest/sampling/leopardi_sampler.py) (See [paper](https://ftp.gwdg.de/pub/EMIS/journals/ETNA/vol.25.2006/pp309-327.dir/pp309-327.pdf) for further details). Using the sampled directions, produce linear strain ramps to user limits on deviatoric and volumetric strain magnitude and exporting the load paths to JSON that can be used in the input file for [FANS](https://github.com/DataAnalyticsEngineering/FANS).

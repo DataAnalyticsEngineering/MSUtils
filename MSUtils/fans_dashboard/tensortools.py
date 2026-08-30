@@ -2,312 +2,171 @@ import numpy as np
 from scipy.linalg import eigvalsh
 
 """
-Utility routines to work with tensors
-in Voigt and Mandel notation.
+Voigt strain: (ε_11, ε_22, ε_33, 2ε_23, 2ε_13, 2ε_12).
+Voigt stress: (σ_11, σ_22, σ_33, σ_23, σ_13, σ_12).
 
+Mandel: (A_11, A_22, A_33, √2 A_12, √2 A_13, √2 A_23).
 """
+
+_COMPONENT_ORDER = [0, 1, 2, 5, 4, 3]
+_SQRT2 = np.sqrt(2.0)
+
+
+def _convert_vector(values, shear_factor, order):
+    result = np.array(values, dtype=float)
+    result[..., 3:] *= shear_factor
+    return result[..., _COMPONENT_ORDER] if order == "voigt" else result
+
+
+def _convert_matrix(values, shear_factor, order):
+    result = np.array(values, dtype=float)
+    result[..., 3:, :] *= shear_factor
+    result[..., :, 3:] *= shear_factor
+    if order == "voigt":
+        result = result[..., _COMPONENT_ORDER, :][..., :, _COMPONENT_ORDER]
+    return result
 
 
 def VoigtStrain2Mandel(A_voigt, order="voigt"):
-    """Convert a strain in Voigt notation to Mandel notation.
-
-    Parameters
-    ----------
-    A_voigt : ndarray
-        symmetric 2-tensor in Voigt-like notation
-        (i.e. engineering shear for off-diagonal components)
-
-    order : str
-        if 'voigt' the order (xx, yy, zz, yz, xz, xy) and
-        otherwise, (xx, yy, zz, xy, xz, yz)  is assumed;
-
-    Returns
-    -------
-    ndarray
-        The converted tensor as a 6 vector
-
-    """
-    f = np.sqrt(0.5)
-    A_mandel = np.array([1.0, 1.0, 1.0, f, f, f]) * A_voigt
-    if order == "voigt":
-        # Voigt in --> Reordering needed
-        A_mandel = A_mandel[np.array((0, 1, 2, 5, 4, 3))]
-    return A_mandel
+    """Convert engineering Voigt strain to Mandel notation."""
+    return _convert_vector(A_voigt, 1.0 / _SQRT2, order)
 
 
 def VoigtStress2Mandel(A_voigt, order="voigt"):
-    """Convert a stress in Voigt notation to Mandel notation.
-
-    Parameters
-    ----------
-    A_voigt : ndarray
-        symmetric 2-tensor in Voigt-like notation
-        (i.e. off-diagonal components are reported without prefactor)
-
-    order : str
-        if 'voigt' the order (xx, yy, zz, yz, xz, xy) and
-        otherwise, (xx, yy, zz, xy, xz, yz)  is assumed;
-
-    Returns
-    -------
-    ndarray
-        The converted tensor as a 6 vector
-
-    """
-
-    f = np.sqrt(2.0)
-    A_mandel = np.array([1.0, 1.0, 1.0, f, f, f]) * A_voigt
-    if order == "voigt":
-        # Voigt in --> Reordering needed
-        A_mandel = A_mandel[np.array((0, 1, 2, 5, 4, 3))]
-    return A_mandel
+    """Convert Voigt stress to Mandel notation."""
+    return _convert_vector(A_voigt, _SQRT2, order)
 
 
 def Mandel2VoigtStrain(A_mandel, order="voigt"):
-    """Convert a tensor in Mandel notation to Voigt (for strains).
-
-    Parameters
-    ----------
-    A_voigt : ndarray
-        symmetric 2-tensor in Mandel notation
-
-    order : str
-        if 'voigt' the order (xx, yy, zz, yz, xz, xy) and
-        otherwise, (xx, yy, zz, xy, xz, yz)  is returned on output;
-
-    Returns
-    -------
-    ndarray
-        The converted tensor as a 6 vector
-
-    """
-    f = np.sqrt(2.0)
-    A_voigt = np.array([1.0, 1.0, 1.0, f, f, f]) * A_mandel
-    if order == "voigt":
-        # Voigt in --> Reordering needed
-        A_voigt = A_voigt[np.array((0, 1, 2, 5, 4, 3))]
-    return A_voigt
+    """Convert Mandel strain to engineering Voigt notation."""
+    return _convert_vector(A_mandel, _SQRT2, order)
 
 
 def Mandel2VoigtStress(A_mandel, order="voigt"):
-    """Convert a tensor in Mandel notation to Voigt (for stresses).
-
-    Parameters
-    ----------
-    A_voigt : ndarray
-        symmetric 2-tensor in Mandel notation
-
-    order : str
-        if 'voigt' the order (xx, yy, zz, yz, xz, xy) and
-        otherwise, (xx, yy, zz, xy, xz, yz)  is returned on output;
-
-    Returns
-    -------
-    ndarray
-        The converted tensor as a 6 vector
-
-    """
-    f = np.sqrt(0.5)
-    A_voigt = np.array([1.0, 1.0, 1.0, f, f, f]) * A_mandel
-    if order == "voigt":
-        # Voigt in --> Reordering needed
-        A_voigt[:] = A_voigt[np.array((0, 1, 2, 5, 4, 3))]
-    return A_voigt
+    """Convert Mandel stress to Voigt notation."""
+    return _convert_vector(A_mandel, 1.0 / _SQRT2, order)
 
 
 def StiffnessVoigt2Mandel(C_v, order="voigt"):
-    C_m = np.array(C_v)
-    f = np.sqrt(2.0)
-    C_m[:, :3] *= f
-    C_m[:3, :] *= f
-    if order == "voigt":
-        idx = np.array((0, 1, 2, 5, 4, 3))
-        C_m = C_m[idx[:, None], idx[None, :]]
-    return C_m
+    """Convert a Voigt stiffness matrix to Mandel notation."""
+    return _convert_matrix(C_v, _SQRT2, order)
 
 
 def ComplianceVoigt2Mandel(S_v, order="voigt"):
-    S_m = np.array(S_v)
-    f = np.sqrt(0.5)
-    S_m[:, :3] *= f
-    S_m[:3, :] *= f
-    if order == "voigt":
-        idx = np.array((0, 1, 2, 5, 4, 3))
-        S_m = S_m[idx[:, None], idx[None, :]]
-    return S_m
+    """Convert a Voigt compliance matrix to Mandel notation."""
+    return _convert_matrix(S_v, 1.0 / _SQRT2, order)
 
 
 def Full2Mandel(A):
-    original_shape = A.shape[:-2]
-    A_flat = A.reshape(-1, 3, 3)
-    f = np.sqrt(2.0)
-    A_mandel = np.zeros((A_flat.shape[0], 6))
-    A_mandel[:, 0] = A_flat[:, 0, 0]
-    A_mandel[:, 1] = A_flat[:, 1, 1]
-    A_mandel[:, 2] = A_flat[:, 2, 2]
-    A_mandel[:, 3] = f * A_flat[:, 0, 1]
-    A_mandel[:, 4] = f * A_flat[:, 0, 2]
-    A_mandel[:, 5] = f * A_flat[:, 1, 2]
-    return A_mandel.reshape(original_shape + (6,))
+    """Convert symmetric 3x3 tensors to Mandel notation."""
+    A = np.asarray(A, dtype=float)
+    A_mandel = np.empty(A.shape[:-2] + (6,))
+    A_mandel[..., 0] = A[..., 0, 0]
+    A_mandel[..., 1] = A[..., 1, 1]
+    A_mandel[..., 2] = A[..., 2, 2]
+    A_mandel[..., 3] = _SQRT2 * A[..., 0, 1]
+    A_mandel[..., 4] = _SQRT2 * A[..., 0, 2]
+    A_mandel[..., 5] = _SQRT2 * A[..., 1, 2]
+    return A_mandel
 
 
 def Mandel2Full(A_mandel):
-    original_shape = A_mandel.shape[:-1]
-    A_mandel_flat = A_mandel.reshape(-1, 6)
-    f = np.sqrt(0.5)
-    idx = np.array(((0, 3, 4), (3, 1, 5), (4, 5, 2)))
-    A = np.zeros((A_mandel_flat.shape[0], 3, 3))
-    A = f * A_mandel_flat[:, idx]
-    f = np.sqrt(2.0)
-    A[:, 0, 0] *= f
-    A[:, 1, 1] *= f
-    A[:, 2, 2] *= f
-    return A.reshape(original_shape + (3, 3))
+    """Convert Mandel vectors to symmetric 3x3 tensors."""
+    A_mandel = np.asarray(A_mandel, dtype=float)
+    A = np.empty(A_mandel.shape[:-1] + (3, 3))
+    A[..., 0, 0] = A_mandel[..., 0]
+    A[..., 1, 1] = A_mandel[..., 1]
+    A[..., 2, 2] = A_mandel[..., 2]
+    A[..., 0, 1] = A_mandel[..., 3] / _SQRT2
+    A[..., 1, 0] = A[..., 0, 1]
+    A[..., 0, 2] = A_mandel[..., 4] / _SQRT2
+    A[..., 2, 0] = A[..., 0, 2]
+    A[..., 1, 2] = A_mandel[..., 5] / _SQRT2
+    A[..., 2, 1] = A[..., 1, 2]
+    return A
 
 
 def IsoProjectionKappa(A_mandel):
-    """Project 2-tensor in Mandel notation onto Id.
-
-    The computation computes the orthogonal projection of an arbitrary, symmetric 2 tensor
-    encoded as a 6-vector in Mandel notation onto the Id (the 2nd order identit ytensor).
-
-    If given a 2d array, the first index is assumed to represent different microstructures
-    and the projection is computed in vectorized form, returning a numpy.ndarray.
-
-    Parameters
-    ----------
-    A_mandel : ndarray
-        If ndim=1, then a single tensor is supplied in terms of a 6 vector according to the Mandel notation.
-        If ndim=2, shape = (n, 6,), then n different conductivity tensors are provided in the same notation.
-
-    Returns
-    -------
-    ndarray :
-        If ndim=1, a scalar isotropic conductivity is returned.
-        If ndim=2, a numpy.ndarray containing the n projections is returned.
-    """
-    if A_mandel.ndim == 1:
-        kappa = A_mandel[:3].mean()
-    else:
-        # vectorized computation
-        kappa = A_mandel[:, :3].mean(axis=1)
-    return kappa
+    """Project Mandel tensors onto the second-order identity."""
+    A_mandel = np.asarray(A_mandel)
+    return A_mandel[..., :3].mean(axis=-1)
 
 
 def IsoProjectionC(C_mandel):
-    """Project 4-tensor in Mandel notation onto isotropic projectors.
-
-    The computation computes the orthogonal projection of an arbitrary, symmetric 4-tensor
-    encoded as a 6x6 matrix in Mandel notation onto the two isotropic projectors to compute
-    the bulk modulus K and the shear modulus G.
-
-    If given a 3d array, the first index is assumed to represent different microstructures
-    and the projection is computed in vectorized form, returning a numpy.ndarray.
-
-    Parameters
-    ----------
-    A_mandel : ndarray
-        If ndim=2, then a single tensor is supplied in terms of a 6x6 matrix according to the Mandel notation.
-        If ndim=3, shape = (n, 6, 6,), then n different bulk and shear moduli are returned.
-
-    Returns
-    -------
-    float or ndarray :
-        If ndim=2, the bulk modulus is returned.
-        If ndim=3, a numpy.ndarray containing the n different bulk moduli is returned.
-    float or ndarray :
-        If ndim=2, the shear modulus is returned.
-        If ndim=3, a numpy.ndarray containing the n different shear moduli is returned.
-    """
-    if C_mandel.ndim == 2:
-        K = C_mandel[:3, :3].mean()
-        G = (np.trace(C_mandel) - 3.0 * K) / 10.0
-    else:
-        # vectorized computation
-        K = C_mandel[:, :3, :3].mean(axis=(1, 2))
-        G = (np.trace(C_mandel, axis1=1, axis2=2) - 3.0 * K) / 10.0
+    """Return the isotropic bulk and shear projections of Mandel matrices."""
+    C_mandel = np.asarray(C_mandel)
+    K = C_mandel[..., :3, :3].mean(axis=(-2, -1))
+    G = (np.trace(C_mandel, axis1=-2, axis2=-1) - 3.0 * K) / 10.0
     return K, G
 
 
 def Piso1():
-    """Returns the first isotropic projector in Mandel notation."""
+    """Return the volumetric isotropic projector in Mandel notation."""
     P = np.zeros((6, 6))
     P[:3, :3] = 1.0 / 3.0
     return P
 
 
 def Piso2():
-    """Returns the second isotropic projector in Mandel notation."""
-    P = np.eye(6)
-    P = P - Piso1()
-    return P
+    """Return the deviatoric isotropic projector in Mandel notation."""
+    return np.eye(6) - Piso1()
 
 
 def Ciso(K, G):
-    """Returns an isotropic stiffness tensor in Mandel notation."""
-    if type(K) is np.ndarray:
-        return (3.0 * K - 2.0 * G)[:, None, None] * Piso1()[None, :, :] + 2.0 * G[
-            :, None, None
-        ] * np.eye(6)[None, :, :]
-    return (3.0 * K - 2.0 * G) * Piso1() + 2.0 * G * np.eye(6)
+    """Return isotropic Mandel stiffness matrices from bulk and shear moduli."""
+    K = np.asarray(K, dtype=float)[..., None, None]
+    G = np.asarray(G, dtype=float)[..., None, None]
+    return 3.0 * K * Piso1() + 2.0 * G * Piso2()
 
 
 def ConvertElasticConstants(**kwargs):
-    # todo: check for K, G, E, nu
-    # if any two are available, compute other parameters (6 cases)
-    el_const = {"E": None, "nu": None, "G": None, "K": None}
-    el_const.update(kwargs)
-    E, K, G, nu = el_const["E"], el_const["K"], el_const["G"], el_const["nu"]
-    has_K = K is not None
-    has_E = E is not None
-    has_G = G is not None
-    has_nu = nu is not None
-    if has_K + has_G + has_E + has_nu < 2:
-        raise ValueError(
-            "Insufficient inputs: at least two independent elastic constants (E, K, G, nu) required, received: "
-            + str(kwargs)
-        )
-    if has_E:
-        assert E > 0, f"Youngs modulus must be positive, but received E={E}"
-    if has_K:
-        assert K > 0, f"Bulk modulus must be positive, but received K={K}"
-    if has_G:
-        assert G > 0, f"Shear modulus must be positive, but received G={G}"
-    if has_nu:
-        assert (nu > -1.0) and (
-            nu < 0.5
-        ), f"Poisson ratio must satisfy -1 < nu < 0.5, but received nu={nu}"
+    """Return all isotropic elastic constants from exactly two inputs."""
+    names = {"E", "nu", "G", "K"}
+    unknown = set(kwargs) - names
+    if unknown:
+        raise ValueError(f"Unknown elastic constants: {', '.join(sorted(unknown))}.")
 
-    if not has_E:
-        if has_K and has_G:
-            E = 9.0 * K * G / (3.0 * K + G)
-            nu = E / (2.0 * G) - 1.0
-        elif has_K and has_nu:
-            E = K * 3.0 * (1.0 - 2.0 * nu)
-            G = E / (2.0 * (1.0 + nu))
-        else:
-            E = G * 2.0 * (1.0 + nu)
-            K = E / (3.0 * (1.0 - 2.0 * nu))
-    else:
-        if has_nu:
-            # E, nu given
-            G = E / (2.0 * (1.0 + nu))
-            K = E / (3.0 * (1.0 - 2.0 * nu))
-        else:
-            if has_K:
-                # E, K given
-                nu = (3.0 * K - E) / (6.0 * K)
-                G = E / (2.0 * (1.0 + nu))
-            else:
-                # E, G given
-                nu = E / (2.0 * G) - 1.0
-                K = E / (3.0 * (1.0 - 2.0 * nu))
-    el_const["K"] = K
-    el_const["E"] = E
-    el_const["G"] = G
-    el_const["nu"] = nu
+    values = {name: float(value) for name, value in kwargs.items() if value is not None}
+    if len(values) != 2:
+        raise ValueError("Exactly two of E, nu, G, and K must be provided.")
+    if not all(np.isfinite(value) for value in values.values()):
+        raise ValueError("Elastic constants must be finite.")
+    for name in ("E", "G", "K"):
+        if name in values and values[name] <= 0.0:
+            raise ValueError("E, G, and K must be positive.")
+    if "nu" in values and not -1.0 < values["nu"] < 0.5:
+        raise ValueError("nu must satisfy -1 < nu < 0.5.")
 
-    return el_const
+    E = values.get("E")
+    nu = values.get("nu")
+    G = values.get("G")
+    K = values.get("K")
+    pair = set(values)
+
+    if pair == {"E", "nu"}:
+        G = E / (2.0 * (1.0 + nu))
+        K = E / (3.0 * (1.0 - 2.0 * nu))
+    elif pair == {"E", "G"}:
+        if E >= 3.0 * G:
+            raise ValueError("E and G are not physically consistent.")
+        nu = E / (2.0 * G) - 1.0
+        K = E / (3.0 * (1.0 - 2.0 * nu))
+    elif pair == {"E", "K"}:
+        if E >= 9.0 * K:
+            raise ValueError("E and K are not physically consistent.")
+        nu = (3.0 * K - E) / (6.0 * K)
+        G = E / (2.0 * (1.0 + nu))
+    elif pair == {"G", "K"}:
+        E = 9.0 * K * G / (3.0 * K + G)
+        nu = E / (2.0 * G) - 1.0
+    elif pair == {"G", "nu"}:
+        E = 2.0 * G * (1.0 + nu)
+        K = E / (3.0 * (1.0 - 2.0 * nu))
+    elif pair == {"K", "nu"}:
+        E = 3.0 * K * (1.0 - 2.0 * nu)
+        G = E / (2.0 * (1.0 + nu))
+
+    return {"E": E, "nu": nu, "G": G, "K": K}
 
 
 def is_spd(matrix):
@@ -320,27 +179,6 @@ def is_spd(matrix):
     is_positive_definite = np.all(eigenvalues > 0)
 
     return is_symmetric and is_positive_definite, eigenvalues
-
-
-def compute_volume_fractions(microstructure):
-    """
-    Compute volume fractions from binary microstructure.
-
-    Parameters
-    ----------
-    microstructure : ndarray
-        Binary microstructure with values 0 and 1
-
-    Returns
-    -------
-    vf : list
-        List of volume fractions [vf_phase0, vf_phase1]
-    """
-    total_volume = microstructure.size
-    volume_phase1 = np.sum(microstructure)
-    volume_phase0 = total_volume - volume_phase1
-
-    return [volume_phase0 / total_volume, volume_phase1 / total_volume]
 
 
 def compute_VoigtReuss_bounds(phase_tensors, volume_fractions):

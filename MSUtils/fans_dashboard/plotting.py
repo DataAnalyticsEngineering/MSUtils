@@ -1,6 +1,7 @@
-import numpy as np
 import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def setup_mpl_style(fontsize=12):

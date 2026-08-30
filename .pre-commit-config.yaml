@@ -1,14 +1,33 @@
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.3.0
-  hooks:
-    - id: check-xml
-    - id: check-merge-conflict
-    - id: mixed-line-ending
-    - id: end-of-file-fixer
-    - id: trailing-whitespace
-# black repo for python formatting
-- repo: https://github.com/ambv/black
-  rev: 22.12.0
-  hooks:
-    - id: black
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff-check
+        args:
+          - --fix
+          - --exit-non-zero-on-fix
+          - --target-version=py310
+          - --select=E4,E9,F,I
+        types_or: [python, pyi]
+      - id: ruff-format
+        args: [--target-version=py310]
+        types_or: [python, pyi]

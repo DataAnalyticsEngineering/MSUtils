@@ -203,3 +203,8 @@ coverage
 
 # Dedicated folder for personal projects
 **/scratch/
+
+
+AGENTS.md
+repository_audit.md
+**/tests/
