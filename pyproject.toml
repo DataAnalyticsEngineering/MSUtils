@@ -21,17 +21,17 @@ platforms = ["linux-64", "osx-64", "osx-arm64"]
 MSUtils = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
-numpy = ">=2.5.2,<3"
+numpy = ">=2.5.3,<3"
 h5py = ">=3.16.0,<4"
-scipy = ">=1.18.0,<2"
+scipy = ">=1.18.1,<2"
 scikit-image = ">=0.26.0,<0.27"
-lxml = ">=6.1.2,<7"
+lxml = ">=6.1.3,<7"
 sympy = ">=1.14.0,<2"
 pyrecest = ">=2.2.2,<3"
 
 matplotlib = ">=3.11.1,<4"
 meshio = ">=5.3.5,<6"
-plotly = ">=6.9.0,<7"
+plotly = ">=7.0.0,<8"
 
 ipykernel = ">=7.3.0,<8"
 nbformat = ">=5.11.1,<6"
@@ -39,10 +39,14 @@ nbformat = ">=5.11.1,<6"
 pytest = ">=9.1.1,<10"
 git = ">=2.55.0,<3"
 pre-commit = ">=4.6.2,<5"
+pyvista = ">=0.48.4,<0.49"
 
+[tool.pixi.feature.neper.dependencies]
+neper = ">=5.0.0,<6"
 
 [tool.pixi.environments]
 default = {features = [], solve-group = "default"}
+neper = {features = ["neper"], no-default-feature = true}
 
 [project.scripts]
 h52xdmf = "MSUtils.general.h52xdmf:main"
