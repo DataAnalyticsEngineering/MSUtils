@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 from MSUtils.general.h52xdmf import write_xdmf
-from MSUtils.neper import NeperMicrostructure
+from MSUtils.neper import NeperGBErosion, NeperMicrostructure
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,8 +22,10 @@ def generate_neper_microstructure(
     periodicity,
     crystal_symmetry,
     seed,
+    interface_thickness,
     tesr_directory="data/neper",
     extra_args=(),
+    save_normals=False,
 ):
     """Generate a Neper raster tessellation and convert it to HDF5."""
     resolution = (Nx, Ny, Nz)
@@ -54,13 +56,24 @@ def generate_neper_microstructure(
         orientation,
         "-periodicity",
         periodicity,
+        "-statface",
+        "polys,vernb,vercoos",
+        *map(str, extra_args),
+        "-format",
+        "tess,tesr",
+        "-o",
+        output_stem.name,
     ]
-    command.extend((*map(str, extra_args), "-format", "tesr", "-o", output_stem.name))
     subprocess.run(command, check=True, cwd=output_stem.parent)
 
     microstructure = NeperMicrostructure(output_stem.with_suffix(".tesr"))
-    microstructure.orientation_metadata["periodicity"] = periodicity
+    erosion = NeperGBErosion(
+        microstructure,
+        output_stem.with_suffix(".stface"),
+        interface_thickness,
+    )
     microstructure.write(h5_filename, f"/{group_name}/microstructure")
+    erosion.write_h5(h5_filename, f"/{group_name}", save_normals=save_normals)
     return microstructure
 
 
@@ -68,6 +81,7 @@ def main():
     Nx, Ny, Nz = 256, 256, 256
     L = (1.0, 1.0, 1.0)
     num_grains = 32
+    interface_thickness = 6 * L[0] / Nx
     h5_filename = "data/neper_microstructures.h5"
     xdmf_filename = "data/neper_microstructures.xdmf"
     tesr_directory = "data/neper"
@@ -112,7 +126,9 @@ def main():
             Nz=Nz,
             L=L,
             seed=seed,
+            interface_thickness=interface_thickness,
             tesr_directory=tesr_directory,
+            save_normals=True,
         )
 
     write_xdmf(

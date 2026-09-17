@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from MSUtils.general.grid import GridSpec, validate_order
+from MSUtils.general.grid import GridSpec
 from MSUtils.general.MicrostructureImage import MicrostructureImage
 
 _FORMAT_VERSION = "2.2"
@@ -223,7 +223,6 @@ class NeperMicrostructure(MicrostructureImage):
             image=self.image,
             grid=GridSpec(shape=self.resolution, lengths=lengths),
         )
-        self.orientation_metadata = self._metadata()
 
     def _parse(self, reader: _Reader) -> None:
         if (
@@ -254,11 +253,7 @@ class NeperMicrostructure(MicrostructureImage):
             "grain_count",
             "grain_ids",
             "crystal_symmetry",
-            "orientations",
             "rotation_matrices",
-            "orientation_descriptor",
-            "orientation_descriptor_original",
-            "orientation_convention",
             "image",
         ):
             setattr(self, name, None)
@@ -332,21 +327,17 @@ class NeperMicrostructure(MicrostructureImage):
             elif marker == b"*ori":
                 if self.grain_count is None:
                     raise ValueError("Neper *ori requires a grain count.")
-                original = _text(reader.nonempty_line(), reader.filename)
-                descriptor, convention = _orientation_description(original)
+                description = _text(reader.nonempty_line(), reader.filename)
+                descriptor, convention = _orientation_description(description)
                 values = _ascii(
                     reader,
                     self.grain_count * _ORIENTATION_SIZES[descriptor],
                     np.dtype(np.float64),
                     "grain orientations",
                 ).reshape(self.grain_count, _ORIENTATION_SIZES[descriptor])
-                self.orientations = values
                 self.rotation_matrices = _orientation_matrices(
                     values, descriptor, convention
                 )
-                self.orientation_descriptor = descriptor
-                self.orientation_descriptor_original = original
-                self.orientation_convention = convention
             elif marker == b"*crysym":
                 self.crystal_symmetry = _text(reader.nonempty_line(), reader.filename)
             elif marker.startswith(b"*"):
@@ -363,14 +354,17 @@ class NeperMicrostructure(MicrostructureImage):
         return marker
 
     def _finish_grains(self) -> None:
-        internal_ids = self.grain_count is not None
-        positive_ids = np.unique(self.image[self.image > 0]).astype(
-            np.int64, copy=False
-        )
         if self.grain_count is None:
-            self.grain_count = len(positive_ids)
-            self.grain_ids = positive_ids
-        elif self.grain_ids is None:
+            values, inverse = np.unique(self.image, return_inverse=True)
+            self.void_present = bool(values[0] == 0)
+            self.grain_ids = np.ascontiguousarray(
+                values[int(self.void_present) :], dtype=np.int64
+            )
+            self.grain_count = len(self.grain_ids)
+            self.image = inverse.reshape(self.image.shape)
+            return
+
+        if self.grain_ids is None:
             self.grain_ids = np.arange(1, self.grain_count + 1, dtype=np.int64)
         else:
             self.grain_ids = np.asarray(self.grain_ids, dtype=np.int64)
@@ -386,45 +380,17 @@ class NeperMicrostructure(MicrostructureImage):
             raise ValueError(
                 "Neper grain IDs must be positive; zero is reserved for voids."
             )
-        if internal_ids and np.any(self.image > self.grain_count):
+        if np.any(self.image > self.grain_count):
             invalid = np.unique(self.image[self.image > self.grain_count])
             raise ValueError(
                 f"Voxel data contain invalid internal grain IDs {invalid.tolist()}."
             )
 
-        expected = np.arange(1, self.grain_count + 1)
-        if internal_ids and not np.array_equal(self.grain_ids, expected):
-            self.image = np.ascontiguousarray(
-                np.concatenate(([0], self.grain_ids))[self.image.astype(np.int64)]
-            )
-            positive_ids = np.unique(self.image[self.image > 0])
-        missing = np.setdiff1d(positive_ids, self.grain_ids)
-        if missing.size:
-            raise ValueError(
-                f"Voxel data contain undeclared grain IDs {missing.tolist()}."
-            )
+        self.void_present = bool(np.any(self.image == 0))
+        first_grain_id = int(self.void_present)
+        self.image = np.ascontiguousarray(self.image, dtype=np.int64)
+        self.image += first_grain_id - 1
         self.grain_ids = np.ascontiguousarray(self.grain_ids)
-
-    def _metadata(self) -> dict[str, object]:
-        metadata = {
-            "format_version": self.format_version,
-            "grain_count": self.grain_count,
-            "resolution": self.resolution,
-            "voxel_size": self.voxel_size,
-            "origin": self.origin,
-        }
-        if self.crystal_symmetry is not None:
-            metadata["crystal_symmetry"] = self.crystal_symmetry
-        return metadata
-
-    def _orientation_attributes(self, group: h5py.Group) -> None:
-        group.attrs.update(
-            {
-                "orientation_descriptor": self.orientation_descriptor_original,
-                "orientation_convention": self.orientation_convention,
-                "canonical_rotation_convention": _CANONICAL_CONVENTION,
-            }
-        )
 
     def write(
         self,
@@ -433,22 +399,22 @@ class NeperMicrostructure(MicrostructureImage):
         order: str = "zyx",
         compression_level: int = 6,
     ) -> None:
-        """Write the microstructure and its grain orientations."""
-        order = validate_order(order)
+        """Write the microstructure and its rotation matrices."""
         dataset_name = "/" + (dset_name or self.dset_name or "").strip("/")
-        group_name = dataset_name.rsplit("/", 1)[0] + "/orientations"
-        if dataset_name == group_name:
-            raise ValueError("The image dataset cannot be named 'orientations'.")
+        rotation_name = dataset_name.rsplit("/", 1)[0] + "/rotation_matrices"
+        if dataset_name == rotation_name:
+            raise ValueError("The image dataset cannot be named 'rotation_matrices'.")
 
         super().write(h5_filename, dset_name, order, compression_level)
 
         with h5py.File(self.h5_filename, "a") as h5_file:
-            if group_name in h5_file:
-                del h5_file[group_name]
-            group = h5_file.create_group(group_name)
-            group.attrs.update(self.orientation_metadata)
-            group.create_dataset("grain_ids", data=self.grain_ids)
-            if self.orientations is not None:
-                self._orientation_attributes(group)
-                group.create_dataset("original", data=self.orientations)
-                group.create_dataset("rotation_matrices", data=self.rotation_matrices)
+            if rotation_name in h5_file:
+                del h5_file[rotation_name]
+            if self.rotation_matrices is not None:
+                rotation_matrices = self.rotation_matrices
+                if self.void_present:
+                    rotation_matrices = np.concatenate(
+                        (np.eye(3)[None], rotation_matrices)
+                    )
+                dataset = h5_file.create_dataset(rotation_name, data=rotation_matrices)
+                dataset.attrs["canonical_rotation_convention"] = _CANONICAL_CONVENTION

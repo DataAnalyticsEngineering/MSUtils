@@ -192,7 +192,10 @@ Thumbs.db
 *.vtk
 *.json
 *.vti
+*.tess
 *.tesr
+*.stface
+*.stseed
 
 # pixi environments
 .pixi
@@ -206,6 +209,4 @@ coverage
 **/scratch/
 
 
-AGENTS.md
-repository_audit.md
 **/tests/

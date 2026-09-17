@@ -68,6 +68,10 @@ def write_xdmf(
             6: "Tensor6",
             9: "Tensor",
         }.get(Nt)
+        number_type = {"i": "Int", "u": "UInt", "f": "Float"}.get(dset.dtype.kind)
+        if number_type is None:
+            print_verbose(f"Omitting dataset {dset.name} due to unsupported dtype.")
+            return
 
         if time_series:
             # Remove the time_keyword{time_step}/ part from the attribute name
@@ -103,8 +107,8 @@ def write_xdmf(
             attr,
             "DataItem",
             Dimensions=" ".join(str(i) for i in dset.shape),
-            NumberType="Float",
-            Precision="4",
+            NumberType=number_type,
+            Precision=str(dset.dtype.itemsize),
             Format="HDF",
         )
 
@@ -118,6 +122,8 @@ def write_xdmf(
 
         for dset in group.values():
             if isinstance(dset, h5py.Dataset):
+                if dset.name.endswith("/rotation_matrices"):
+                    continue
                 if len(dset.shape) in [3, 4]:
                     grid_size = dset.shape[:3]
                     if time_series and time is not None:
