@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from pathlib import Path
 from typing import Self
@@ -8,7 +9,6 @@ import numpy.typing as npt
 from scipy.spatial import Delaunay
 
 from MSUtils.voronoi import VoronoiImage, VoronoiTessellation
-import json
 
 
 class PeriodicVoronoiImageErosion:
@@ -36,7 +36,7 @@ class PeriodicVoronoiImageErosion:
         )  # Extrusion factor in both directions of the plane
         self.L = np.array(voroImg.L)
         self.eroded_image = None
-        self.N = np.array(voroImg.resolution)
+        self.N = np.array(voroImg.shape)
         self.voroTess = voroTess
 
         self.num_crystals = len(np.unique(self.image))

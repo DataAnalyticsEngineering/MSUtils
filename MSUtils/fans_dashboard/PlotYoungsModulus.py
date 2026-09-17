@@ -1,6 +1,6 @@
+import meshio
 import numpy as np
 import plotly.graph_objs as go
-import meshio
 
 
 def compute_YoungsModulus3D(C_batch):

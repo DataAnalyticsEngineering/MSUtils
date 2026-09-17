@@ -192,6 +192,10 @@ Thumbs.db
 *.vtk
 *.json
 *.vti
+*.tess
+*.tesr
+*.stface
+*.stseed
 
 # pixi environments
 .pixi
@@ -203,3 +207,6 @@ coverage
 
 # Dedicated folder for personal projects
 **/scratch/
+
+
+**/tests/
