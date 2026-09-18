@@ -79,7 +79,7 @@ def generate_neper_microstructure(
 
 
 def main():
-    Nx, Ny, Nz = 128, 128, 128#256, 256, 256
+    Nx, Ny, Nz = 256, 256, 256
     L = (1.0, 1.0, 1.0)
     num_grains = 32
     interface_thickness = 6 * L[0] / Nx
