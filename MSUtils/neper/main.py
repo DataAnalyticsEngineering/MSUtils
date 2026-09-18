@@ -25,6 +25,7 @@ def generate_neper_microstructure(
     interface_thickness,
     tesr_directory="data/neper",
     extra_args=(),
+    save_orientations=False,
     save_normals=False,
 ):
     """Generate a Neper raster tessellation and convert it to HDF5."""
@@ -73,12 +74,12 @@ def generate_neper_microstructure(
         interface_thickness,
     )
     microstructure.write(h5_filename, f"/{group_name}/microstructure")
-    erosion.write_h5(h5_filename, f"/{group_name}", save_normals=save_normals)
+    erosion.write_h5(h5_filename, f"/{group_name}", rotation_matrices=microstructure.rotation_matrices, canonical_convention_grains=microstructure.canoncial_convention_grains, save_normals=save_normals, save_orientations=save_orientations)
     return microstructure
 
 
 def main():
-    Nx, Ny, Nz = 256, 256, 256
+    Nx, Ny, Nz = 128, 128, 128#256, 256, 256
     L = (1.0, 1.0, 1.0)
     num_grains = 32
     interface_thickness = 6 * L[0] / Nx
@@ -128,6 +129,7 @@ def main():
             seed=seed,
             interface_thickness=interface_thickness,
             tesr_directory=tesr_directory,
+            save_orientations=True,
             save_normals=True,
         )
 
