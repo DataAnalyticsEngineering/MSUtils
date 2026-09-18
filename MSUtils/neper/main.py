@@ -90,12 +90,22 @@ def main():
 
     examples = (
         {
+            # NOTE: no GBs are added for interfaces of self-touching grains!
+            "group_name": "diamond",
+            "num_grains": "from morpho",
+            "morphology": "tocta(1)",
+            "periodicity": "all",
+            "orientation": "random",
+            "crystal_symmetry": "mmm",
+        },
+        {
             "group_name": "periodic_voronoi",
             "num_grains": num_grains,
             "morphology": "voronoi",
             "periodicity": "all",
-            "orientation": "random",
-            "crystal_symmetry": "cubic",
+            # Use predefined orientations (e.g. same orientation for all grains)
+            "orientation": f"file({_PROJECT_ROOT}/data/uniform_orientation.ori,des=rotmat:active)",
+            "crystal_symmetry": "mmm",
         },
         {
             "group_name": "centroidal_uniform",
