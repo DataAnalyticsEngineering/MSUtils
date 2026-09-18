@@ -1,6 +1,7 @@
 import json
 from itertools import product
 from pathlib import Path
+import numpy.typing as npt
 
 import h5py
 import numpy as np
@@ -186,14 +187,17 @@ class NeperGBErosion:
         self,
         filepath: str | Path,
         grp_name: str,
+        rotation_matrices: npt.Arraylike,
+        canonical_convention_grains: str,
         order: str = "zyx",
+        save_orientations: bool = False,
         save_normals: bool = False,
     ) -> None:
         """Write the eroded image and grain-boundary metadata."""
         order = validate_order(order)
         with h5py.File(filepath, "a") as h5_file:
             group = h5_file.require_group(grp_name)
-            for name in ("eroded_image", "eroded_image_normals"):
+            for name in ("eroded_image", "eroded_image_orientation_0", "eroded_image_orientation_1", "eroded_image_orientation_2", "eroded_image_normals"):
                 if name in group:
                     del group[name]
 
@@ -209,6 +213,16 @@ class NeperGBErosion:
                     "permute_order": order,
                     "interface_thickness": self.interface_thickness,
                     "L": self.L,
+                    "CrystalVoxelInfo": json.dumps(
+                        {
+                            str(tag): {
+                                "grain_tag": int(tag),
+                                "rotation_matrix_cmajor": rot_matrix.T.flatten().tolist(),
+                            }
+                            for tag, rot_matrix in enumerate(rotation_matrices)
+                        }
+                    ),
+                    "canonical_rotation_convention": canonical_convention_grains,
                     "GBVoxelInfo": json.dumps(
                         {
                             str(tag): {
@@ -224,6 +238,21 @@ class NeperGBErosion:
                     "num_GB": len(self.ridge_metadata),
                 }
             )
+            if save_orientations:
+                orientations = np.zeros(self.eroded_image.shape + (3,3,), dtype=np.float64)
+                for tag, rot_matrix in enumerate(rotation_matrices):
+                    orientations[self.eroded_image == tag] = rot_matrix
+                if order == "zyx":
+                    orientations = orientations.transpose(2, 1, 0, 3, 4)
+                for i in range(3):
+                    dataset = group.create_dataset(
+                        f"eroded_image_orientation_{i}",
+                        data=orientations[:,:,:,i],
+                        compression="gzip",
+                        compression_opts=6,
+                    )
+                    dataset.attrs["permute_order"] = order
+                    dataset.attrs["canonical_rotation_convention"] = canonical_convention_grains
             if save_normals:
                 normals = np.zeros(self.eroded_image.shape + (3,), dtype=np.float64)
                 for tag, (normal, _, _) in self.ridge_metadata.items():

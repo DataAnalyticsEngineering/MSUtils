@@ -25,6 +25,7 @@ def generate_neper_microstructure(
     interface_thickness,
     tesr_directory="data/neper",
     extra_args=(),
+    save_orientations=False,
     save_normals=False,
 ):
     """Generate a Neper raster tessellation and convert it to HDF5."""
@@ -73,7 +74,7 @@ def generate_neper_microstructure(
         interface_thickness,
     )
     microstructure.write(h5_filename, f"/{group_name}/microstructure")
-    erosion.write_h5(h5_filename, f"/{group_name}", save_normals=save_normals)
+    erosion.write_h5(h5_filename, f"/{group_name}", rotation_matrices=microstructure.rotation_matrices, canonical_convention_grains=microstructure.canoncial_convention_grains, save_normals=save_normals, save_orientations=save_orientations)
     return microstructure
 
 
@@ -89,12 +90,22 @@ def main():
 
     examples = (
         {
+            # NOTE: no GBs are added for interfaces of self-touching grains!
+            "group_name": "diamond",
+            "num_grains": "from morpho",
+            "morphology": "tocta(1)",
+            "periodicity": "all",
+            "orientation": "random",
+            "crystal_symmetry": "mmm",
+        },
+        {
             "group_name": "periodic_voronoi",
             "num_grains": num_grains,
             "morphology": "voronoi",
             "periodicity": "all",
-            "orientation": "random",
-            "crystal_symmetry": "cubic",
+            # Use predefined orientations (e.g. same orientation for all grains)
+            "orientation": f"file({_PROJECT_ROOT}/data/uniform_orientation.ori,des=rotmat:active)",
+            "crystal_symmetry": "mmm",
         },
         {
             "group_name": "centroidal_uniform",
@@ -128,6 +139,7 @@ def main():
             seed=seed,
             interface_thickness=interface_thickness,
             tesr_directory=tesr_directory,
+            save_orientations=True,
             save_normals=True,
         )
 

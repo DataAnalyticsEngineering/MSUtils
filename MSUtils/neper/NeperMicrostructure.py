@@ -209,6 +209,7 @@ class NeperMicrostructure(MicrostructureImage):
 
     def __init__(self, tesr_filename: str | Path):
         self.tesr_filename = Path(tesr_filename)
+        self.canoncial_convention_grains = _CANONICAL_CONVENTION
         try:
             with self.tesr_filename.open("rb") as file:
                 with mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as data:
