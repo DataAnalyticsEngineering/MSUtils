@@ -196,6 +196,8 @@ Thumbs.db
 *.tesr
 *.stface
 *.stseed
+*.stcell
+*.obj
 
 # pixi environments
 .pixi

@@ -6,7 +6,7 @@ import h5py
 import numpy as np
 
 from MSUtils.general.grid import image_in_order
-from MSUtils.neper.NeperMicrostructure import NeperMicrostructure
+from MSUtils.neper.NeperMicrostructure import NeperMicrostructure, _read_faces
 
 
 class NeperGBErosion:
@@ -15,7 +15,6 @@ class NeperGBErosion:
     def __init__(
         self,
         microstructure: NeperMicrostructure,
-        face_filename: str | Path,
         interface_thickness: float,
     ):
         if not np.isfinite(interface_thickness) or interface_thickness < 0:
@@ -32,31 +31,8 @@ class NeperGBErosion:
         self.rotation_matrices = microstructure.rotation_matrices
         self.interface_thickness = float(interface_thickness)
         self.eroded_image = self.image.copy()
-        self._rasterize(self._read_faces(face_filename))
-
-    @staticmethod
-    def _read_faces(filename: str | Path):
-        with Path(filename).open(encoding="utf-8") as file:
-            for line_number, line in enumerate(file, start=1):
-                values = line.split()
-                if not values:
-                    continue
-                try:
-                    poly_a, poly_b, vertex_count = map(int, values[:3])
-                    vertices = np.asarray(values[3:], dtype=float).reshape(-1, 3)
-                except (IndexError, ValueError) as error:
-                    raise ValueError(
-                        f"Invalid Neper face statistics at {filename}:{line_number}."
-                    ) from error
-                if (
-                    len(values) != 3 + 3 * vertex_count
-                    or vertex_count < 3
-                    or np.any(~np.isfinite(vertices))
-                ):
-                    raise ValueError(
-                        f"Invalid Neper face statistics at {filename}:{line_number}."
-                    )
-                yield poly_a, poly_b, vertices
+        face_filename = microstructure.tesr_filename.with_suffix(".stface")
+        self._rasterize(_read_faces(face_filename))
 
     @staticmethod
     def _canonical_normal(normal: np.ndarray) -> np.ndarray:
@@ -190,8 +166,6 @@ class NeperGBErosion:
         save_orientations: bool = False,
     ) -> None:
         """Write the eroded image and grain-boundary metadata."""
-        if save_orientations and self.rotation_matrices is None:
-            raise ValueError("The Neper microstructure has no grain orientations.")
         grid_attributes = self.grid.to_h5_attributes(order)
         orientation_names = tuple(f"eroded_image_crystal_axis_{axis}" for axis in "xyz")
         with h5py.File(h5_filename, "a") as h5_file:
@@ -231,8 +205,7 @@ class NeperGBErosion:
                     "num_GB": len(self.ridge_metadata),
                 }
             )
-            if self.rotation_matrices is not None:
-                group.create_dataset("rotation_matrices", data=self.rotation_matrices)
+            group.create_dataset("rotation_matrices", data=self.rotation_matrices)
             if save_orientations:
                 grain_voxels = self.eroded_image < self.num_crystals
                 for axis, name in enumerate(orientation_names):
@@ -262,12 +235,3 @@ class NeperGBErosion:
                     compression_opts=6,
                 )
                 dataset.attrs.update(grid_attributes)
-
-
-def generate_neper_eroded_microstructure(microstructure, interface_thickness):
-    """Erode a Neper microstructure using its matching face statistics."""
-    return NeperGBErosion(
-        microstructure,
-        microstructure.tesr_filename.with_suffix(".stface"),
-        interface_thickness,
-    )

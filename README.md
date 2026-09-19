@@ -41,8 +41,8 @@ These modules produce periodic voxelized microstructures (numpy arrays / HDF5 da
   - [VoronoiGBErosion.py](MSUtils/voronoi/VoronoiGBErosion.py): Erode Voronoi images to identify grain-boundary voxels, tag grain-boundary IDs and save grain-boundary metadata.
 
 - Neper based microstructures: ([MSUtils/neper/](MSUtils/neper/))
-  - [NeperMicrostructure.py](MSUtils/neper/NeperMicrostructure.py): Read Neper 5 `.tesr` files and export labelled voxel images and per-grain rotation matrices to HDF5.
-  - [NeperGBErosion.py](MSUtils/neper/NeperGBErosion.py): Rasterize finite-thickness grain boundaries from Neper face geometry and export the eroded image with its per-grain rotation matrices, optionally including grain-boundary normals and crystallographic axes for visualization.
+  - [NeperMicrostructure.py](MSUtils/neper/NeperMicrostructure.py): Generate Neper raster tessellations and export labelled voxel images and per-grain rotation matrices.
+  - [NeperGBErosion.py](MSUtils/neper/NeperGBErosion.py): Rasterize finite-thickness grain boundaries from Neper face geometry and export the eroded image with its per-grain rotation matrices.
   - Rotation matrices map crystal-frame column vectors into the sample frame: `v_sample = Q @ v_crystal`. Their columns are therefore the crystal x, y and z axes expressed in sample coordinates.
 
 - Triply periodic minimal surface (TPMS) based microstructures: ([MSUtils/TPMS/](MSUtils/TPMS/))

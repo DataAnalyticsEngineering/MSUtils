@@ -1,10 +1,7 @@
 from pathlib import Path
 
 from MSUtils.general.h52xdmf import write_xdmf
-from MSUtils.neper import (
-    generate_neper_eroded_microstructure,
-    generate_neper_microstructure,
-)
+from MSUtils.neper import NeperGBErosion, NeperMicrostructure
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -53,7 +50,7 @@ def main():
     }
 
     for seed, (group_name, parameters) in enumerate(examples.items(), start=1):
-        microstructure = generate_neper_microstructure(
+        microstructure = NeperMicrostructure(
             tesr_directory / group_name,
             **parameters,
             neper_executable=neper_executable,
@@ -65,9 +62,7 @@ def main():
         )
         microstructure.write_h5(h5_filename, group_name)
 
-        erosion = generate_neper_eroded_microstructure(
-            microstructure, interface_thickness
-        )
+        erosion = NeperGBErosion(microstructure, interface_thickness)
         erosion.write_h5(
             h5_filename,
             group_name,
