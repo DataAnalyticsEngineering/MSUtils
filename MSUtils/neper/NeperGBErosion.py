@@ -5,7 +5,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from MSUtils.general.grid import image_in_order, validate_order
+from MSUtils.general.grid import image_in_order
 from MSUtils.neper.NeperMicrostructure import NeperMicrostructure
 
 
@@ -22,7 +22,8 @@ class NeperGBErosion:
             raise ValueError("interface_thickness must be finite and nonnegative.")
 
         self.image = microstructure.image
-        self.L = np.asarray(microstructure.L, dtype=float)
+        self.grid = microstructure.grid
+        self.L = np.asarray(self.grid.lengths)
         self.origin = np.asarray(microstructure.origin, dtype=float)
         self.voxel_size = np.asarray(microstructure.voxel_size, dtype=float)
         grain_offset = int(microstructure.void_present)
@@ -31,6 +32,7 @@ class NeperGBErosion:
             for label, grain_id in enumerate(microstructure.grain_ids)
         }
         self.num_crystals = len(self.grain_labels) + grain_offset
+        self.rotation_matrices = microstructure.rotation_matrices
         self.interface_thickness = float(interface_thickness)
         self.eroded_image = self.image.copy()
         self._rasterize(self._read_faces(face_filename))
@@ -73,12 +75,13 @@ class NeperGBErosion:
             vertices - vertices.mean(axis=0), full_matrices=False
         )
         normal = self._canonical_normal(basis[-1])
-        normal /= np.linalg.norm(normal)
 
         if poly_a not in self.grain_labels or poly_b not in self.grain_labels:
             raise ValueError("A Neper face references an unknown grain.")
-        labels = sorted((self.grain_labels[poly_a], self.grain_labels[poly_b]))
-        return normal, int(labels[0]), int(labels[1])
+        grain_a, grain_b = sorted(
+            (self.grain_labels[poly_a], self.grain_labels[poly_b])
+        )
+        return normal, grain_a, grain_b
 
     def _periodic_faces(self, vertices: np.ndarray):
         half = self.interface_thickness / 2
@@ -184,16 +187,25 @@ class NeperGBErosion:
 
     def write_h5(
         self,
-        filepath: str | Path,
+        h5_filename: str | Path,
         grp_name: str,
         order: str = "zyx",
         save_normals: bool = False,
+        save_orientations: bool = False,
     ) -> None:
         """Write the eroded image and grain-boundary metadata."""
-        order = validate_order(order)
-        with h5py.File(filepath, "a") as h5_file:
+        if save_orientations and self.rotation_matrices is None:
+            raise ValueError("The Neper microstructure has no grain orientations.")
+        grid_attributes = self.grid.to_h5_attributes(order)
+        orientation_names = tuple(f"eroded_image_crystal_axis_{axis}" for axis in "xyz")
+        with h5py.File(h5_filename, "a") as h5_file:
             group = h5_file.require_group(grp_name)
-            for name in ("eroded_image", "eroded_image_normals"):
+            for name in (
+                "eroded_image",
+                "eroded_image_normals",
+                "rotation_matrices",
+                *orientation_names,
+            ):
                 if name in group:
                     del group[name]
 
@@ -206,9 +218,8 @@ class NeperGBErosion:
             )
             dataset.attrs.update(
                 {
-                    "permute_order": order,
+                    **grid_attributes,
                     "interface_thickness": self.interface_thickness,
-                    "L": self.L,
                     "GBVoxelInfo": json.dumps(
                         {
                             str(tag): {
@@ -224,6 +235,24 @@ class NeperGBErosion:
                     "num_GB": len(self.ridge_metadata),
                 }
             )
+            if self.rotation_matrices is not None:
+                group.create_dataset("rotation_matrices", data=self.rotation_matrices)
+            if save_orientations:
+                grain_voxels = self.eroded_image < self.num_crystals
+                for axis, name in enumerate(orientation_names):
+                    vectors = np.zeros(self.eroded_image.shape + (3,), dtype=np.float32)
+                    vectors[grain_voxels] = self.rotation_matrices[
+                        self.eroded_image[grain_voxels], :, axis
+                    ]
+                    if order == "zyx":
+                        vectors = vectors.transpose(2, 1, 0, 3)
+                    dataset = group.create_dataset(
+                        name,
+                        data=vectors,
+                        compression="gzip",
+                        compression_opts=6,
+                    )
+                    dataset.attrs.update(grid_attributes)
             if save_normals:
                 normals = np.zeros(self.eroded_image.shape + (3,), dtype=np.float64)
                 for tag, (normal, _, _) in self.ridge_metadata.items():
@@ -236,4 +265,13 @@ class NeperGBErosion:
                     compression="gzip",
                     compression_opts=6,
                 )
-                dataset.attrs["permute_order"] = order
+                dataset.attrs.update(grid_attributes)
+
+
+def generate_neper_eroded_microstructure(microstructure, interface_thickness):
+    """Erode a Neper microstructure using its matching face statistics."""
+    return NeperGBErosion(
+        microstructure,
+        microstructure.tesr_filename.with_suffix(".stface"),
+        interface_thickness,
+    )

@@ -1,4 +1,5 @@
 import mmap
+import subprocess
 from pathlib import Path
 
 import h5py
@@ -26,7 +27,6 @@ _DATA_DTYPES = {
     "binary32": np.dtype("<u4"),
     "binary32_big": np.dtype(">u4"),
 }
-_CANONICAL_CONVENTION = "Q_crystal_to_sample: v_sample = Q @ v_crystal"
 
 
 class _Reader:
@@ -230,16 +230,15 @@ class NeperMicrostructure(MicrostructureImage):
             or reader.nonempty_line() != b"**format"
         ):
             raise ValueError(f"{self.tesr_filename} is not a Neper .tesr file.")
-        self.format_version = _text(reader.nonempty_line(), reader.filename)
-        if self.format_version != _FORMAT_VERSION:
+        format_version = _text(reader.nonempty_line(), reader.filename)
+        if format_version != _FORMAT_VERSION:
             raise ValueError(
-                f"Unsupported Neper .tesr format {self.format_version!r}; only {_FORMAT_VERSION} is supported."
+                f"Unsupported Neper .tesr format {format_version!r}; only {_FORMAT_VERSION} is supported."
             )
         if reader.nonempty_line() != b"**general":
             raise ValueError("Missing **general section in Neper .tesr file.")
 
-        self.dimension = _values(reader, 1, int, "dimension")[0]
-        if self.dimension != 3:
+        if _values(reader, 1, int, "dimension")[0] != 3:
             raise ValueError("Only three-dimensional Neper rasters are supported.")
         self.resolution = _values(reader, 3, int, "resolution")
         self.voxel_size = _values(reader, 3, float, "voxel size")
@@ -249,14 +248,11 @@ class NeperMicrostructure(MicrostructureImage):
             raise ValueError("Neper voxel dimensions must be positive and finite.")
 
         self.origin = (0.0, 0.0, 0.0)
-        for name in (
-            "grain_count",
-            "grain_ids",
-            "crystal_symmetry",
-            "rotation_matrices",
-            "image",
-        ):
-            setattr(self, name, None)
+        self.grain_count = None
+        self.grain_ids = None
+        self.crystal_symmetry = None
+        self.rotation_matrices = None
+        self.image = None
 
         marker = reader.nonempty_line()
         while (
@@ -362,59 +358,107 @@ class NeperMicrostructure(MicrostructureImage):
             )
             self.grain_count = len(self.grain_ids)
             self.image = inverse.reshape(self.image.shape)
-            return
-
-        if self.grain_ids is None:
-            self.grain_ids = np.arange(1, self.grain_count + 1, dtype=np.int64)
         else:
-            self.grain_ids = np.asarray(self.grain_ids, dtype=np.int64)
+            if self.grain_ids is None:
+                self.grain_ids = np.arange(1, self.grain_count + 1, dtype=np.int64)
+            else:
+                self.grain_ids = np.asarray(self.grain_ids, dtype=np.int64)
 
-        if (
-            len(self.grain_ids) != self.grain_count
-            or len(np.unique(self.grain_ids)) != self.grain_count
-        ):
-            raise ValueError(
-                "Neper grain IDs must be unique and match the grain count."
-            )
-        if np.any(self.grain_ids <= 0):
-            raise ValueError(
-                "Neper grain IDs must be positive; zero is reserved for voids."
-            )
-        if np.any(self.image > self.grain_count):
-            invalid = np.unique(self.image[self.image > self.grain_count])
-            raise ValueError(
-                f"Voxel data contain invalid internal grain IDs {invalid.tolist()}."
-            )
+            if (
+                len(self.grain_ids) != self.grain_count
+                or len(np.unique(self.grain_ids)) != self.grain_count
+            ):
+                raise ValueError(
+                    "Neper grain IDs must be unique and match the grain count."
+                )
+            if np.any(self.grain_ids <= 0):
+                raise ValueError(
+                    "Neper grain IDs must be positive; zero is reserved for voids."
+                )
+            if np.any(self.image > self.grain_count):
+                invalid = np.unique(self.image[self.image > self.grain_count])
+                raise ValueError(
+                    f"Voxel data contain invalid internal grain IDs {invalid.tolist()}."
+                )
 
-        self.void_present = bool(np.any(self.image == 0))
-        first_grain_id = int(self.void_present)
-        self.image = np.ascontiguousarray(self.image, dtype=np.int64)
-        self.image += first_grain_id - 1
+            self.void_present = bool(np.any(self.image == 0))
+            self.image = np.ascontiguousarray(self.image, dtype=np.int64)
+            self.image += int(self.void_present) - 1
+
         self.grain_ids = np.ascontiguousarray(self.grain_ids)
+        if self.rotation_matrices is not None and self.void_present:
+            self.rotation_matrices = np.concatenate(
+                (np.eye(3)[None], self.rotation_matrices)
+            )
 
-    def write(
+    def write_h5(
         self,
-        h5_filename: str | Path | None = None,
-        dset_name: str | None = None,
+        h5_filename: str | Path,
+        grp_name: str,
         order: str = "zyx",
         compression_level: int = 6,
     ) -> None:
         """Write the microstructure and its rotation matrices."""
-        dataset_name = "/" + (dset_name or self.dset_name or "").strip("/")
-        rotation_name = dataset_name.rsplit("/", 1)[0] + "/rotation_matrices"
-        if dataset_name == rotation_name:
-            raise ValueError("The image dataset cannot be named 'rotation_matrices'.")
-
-        super().write(h5_filename, dset_name, order, compression_level)
+        group_name = grp_name.strip("/")
+        super().write(
+            h5_filename, f"{group_name}/microstructure", order, compression_level
+        )
 
         with h5py.File(self.h5_filename, "a") as h5_file:
-            if rotation_name in h5_file:
-                del h5_file[rotation_name]
+            group = h5_file[group_name or "/"]
+            if "rotation_matrices" in group:
+                del group["rotation_matrices"]
             if self.rotation_matrices is not None:
-                rotation_matrices = self.rotation_matrices
-                if self.void_present:
-                    rotation_matrices = np.concatenate(
-                        (np.eye(3)[None], rotation_matrices)
-                    )
-                dataset = h5_file.create_dataset(rotation_name, data=rotation_matrices)
-                dataset.attrs["canonical_rotation_convention"] = _CANONICAL_CONVENTION
+                group.create_dataset("rotation_matrices", data=self.rotation_matrices)
+
+
+def generate_neper_microstructure(
+    output_stem,
+    *,
+    neper_executable,
+    Nx,
+    Ny,
+    Nz,
+    L,
+    num_grains,
+    morphology,
+    orientation,
+    periodicity,
+    crystal_symmetry,
+    seed,
+    extra_args=(),
+):
+    """Generate and read a Neper raster tessellation."""
+    output_stem = Path(output_stem).resolve()
+    output_stem.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        str(neper_executable),
+        "-T",
+        "-n",
+        str(num_grains),
+        "-id",
+        str(seed),
+        "-domain",
+        f"cube({','.join(map(str, L))})",
+        "-tesrsize",
+        f"{Nx}:{Ny}:{Nz}",
+        "-morpho",
+        morphology,
+        "-crysym",
+        crystal_symmetry,
+        "-ori",
+        orientation,
+        "-oridescriptor",
+        "rotmat:active",
+        "-periodicity",
+        periodicity,
+        "-statface",
+        "polys,vernb,vercoos",
+        *map(str, extra_args),
+        "-format",
+        "tess,tesr",
+        "-o",
+        output_stem.name,
+    ]
+    subprocess.run(command, check=True, cwd=output_stem.parent)
+    return NeperMicrostructure(output_stem.with_suffix(".tesr"))
