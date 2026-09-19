@@ -71,7 +71,7 @@ def main():
         erosion.write_h5(
             h5_filename,
             group_name,
-            save_normals=False,
+            save_normals=True,
             save_orientations=False,
         )
 

@@ -27,11 +27,8 @@ class NeperGBErosion:
         self.origin = np.asarray(microstructure.origin, dtype=float)
         self.voxel_size = np.asarray(microstructure.voxel_size, dtype=float)
         grain_offset = int(microstructure.void_present)
-        self.grain_labels = {
-            int(grain_id): label + grain_offset
-            for label, grain_id in enumerate(microstructure.grain_ids)
-        }
-        self.num_crystals = len(self.grain_labels) + grain_offset
+        self.label_offset = grain_offset - 1
+        self.num_crystals = microstructure.grain_count + grain_offset
         self.rotation_matrices = microstructure.rotation_matrices
         self.interface_thickness = float(interface_thickness)
         self.eroded_image = self.image.copy()
@@ -76,11 +73,10 @@ class NeperGBErosion:
         )
         normal = self._canonical_normal(basis[-1])
 
-        if poly_a not in self.grain_labels or poly_b not in self.grain_labels:
-            raise ValueError("A Neper face references an unknown grain.")
         grain_a, grain_b = sorted(
-            (self.grain_labels[poly_a], self.grain_labels[poly_b])
+            (poly_a + self.label_offset, poly_b + self.label_offset)
         )
+
         return normal, grain_a, grain_b
 
     def _periodic_faces(self, vertices: np.ndarray):
