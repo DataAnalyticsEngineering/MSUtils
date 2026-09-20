@@ -23,7 +23,6 @@ class NeperGBErosion:
         self.image = microstructure.image
         self.grid = microstructure.grid
         self.L = np.asarray(self.grid.lengths)
-        self.origin = np.asarray(microstructure.origin, dtype=float)
         self.voxel_size = np.asarray(microstructure.voxel_size, dtype=float)
         grain_offset = int(microstructure.void_present)
         self.label_offset = grain_offset - 1
@@ -57,14 +56,12 @@ class NeperGBErosion:
 
     def _periodic_faces(self, vertices: np.ndarray):
         half = self.interface_thickness / 2
-        lower = self.origin - half
-        upper = self.origin + self.L + half
         minimum = vertices.min(axis=0)
         maximum = vertices.max(axis=0)
         shifts = []
         for axis in range(3):
-            first = int(np.ceil((lower[axis] - maximum[axis]) / self.L[axis]))
-            last = int(np.floor((upper[axis] - minimum[axis]) / self.L[axis]))
+            first = int(np.ceil((-half - maximum[axis]) / self.L[axis]))
+            last = int(np.floor((self.L[axis] + half - minimum[axis]) / self.L[axis]))
             shifts.append(range(first, last + 1))
         for shift in product(*shifts):
             yield vertices + np.asarray(shift) * self.L
@@ -79,12 +76,12 @@ class NeperGBErosion:
         best_distance: np.ndarray,
     ) -> None:
         half = self.interface_thickness / 2
-        lower = np.ceil(
-            (vertices.min(axis=0) - half - self.origin) / self.voxel_size - 0.5
-        ).astype(int)
-        upper = np.floor(
-            (vertices.max(axis=0) + half - self.origin) / self.voxel_size - 0.5
-        ).astype(int)
+        lower = np.ceil((vertices.min(axis=0) - half) / self.voxel_size - 0.5).astype(
+            int
+        )
+        upper = np.floor((vertices.max(axis=0) + half) / self.voxel_size - 0.5).astype(
+            int
+        )
         lower = np.maximum(lower, 0)
         upper = np.minimum(upper, np.asarray(self.image.shape) - 1)
         if np.any(lower > upper):
@@ -105,7 +102,7 @@ class NeperGBErosion:
             if not np.any(relevant):
                 continue
             indices = indices[relevant]
-            coordinates = self.origin + (indices + 0.5) * self.voxel_size
+            coordinates = (indices + 0.5) * self.voxel_size
             distance = (coordinates - polygon[0]) @ normal
             band = np.abs(distance) <= half + tolerance
             if not np.any(band):
