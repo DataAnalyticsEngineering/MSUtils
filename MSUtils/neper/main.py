@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from MSUtils.general.h52xdmf import write_xdmf
-from MSUtils.neper import NeperGBErosion, NeperMicrostructure
+from MSUtils.neper import NeperFoam, NeperGBErosion, NeperMicrostructure
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -13,6 +13,11 @@ def main():
     interface_thickness = 6 * L[0] / Nx
     h5_filename = Path("data/neper_microstructures.h5")
     xdmf_filename = "data/neper_microstructures.xdmf"
+
+    strut_radius = interface_thickness
+    foam_h5_filename = Path("data/neper_foams.h5")
+    foam_xdmf_filename = "data/neper_foams.xdmf"
+
     tesr_directory = Path("data/neper")
     neper_executable = _PROJECT_ROOT / ".pixi/envs/neper/bin/neper"
 
@@ -70,9 +75,17 @@ def main():
             save_orientations=False,
         )
 
+        foam = NeperFoam(microstructure, strut_radius)
+        foam.write_h5(foam_h5_filename, group_name)
+
     write_xdmf(
         h5_filepath=h5_filename,
         xdmf_filepath=xdmf_filename,
+        microstructure_length=L[::-1],
+    )
+    write_xdmf(
+        h5_filepath=foam_h5_filename,
+        xdmf_filepath=foam_xdmf_filename,
         microstructure_length=L[::-1],
     )
 

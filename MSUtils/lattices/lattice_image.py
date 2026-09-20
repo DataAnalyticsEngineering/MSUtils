@@ -1,3 +1,5 @@
+from itertools import product
+
 import numpy as np
 
 from MSUtils.general.h52xdmf import write_xdmf
@@ -14,72 +16,98 @@ from MSUtils.lattices.lattice_definitions import (
 )
 
 
-def physical_to_voxel(point, dimensions, shape):
-    """
-    Map a physical coordinate in [0, L] to voxel index in [0, N-1],
-    consistently with spacing = L/(N-1).
-    """
-    point = np.asarray(point, dtype=np.float64)
-    shape = np.asarray(shape, dtype=np.int64)
-    dimensions = np.asarray(dimensions, dtype=np.float64)
+def draw_strut(
+    microstructure,
+    start,
+    end,
+    radius,
+    voxel_sizes,
+    L,
+    *,
+    periodic=False,
+):
+    """Rasterize a capsule, optionally wrapping it across the image domain."""
+    if microstructure.ndim != 3:
+        raise ValueError("microstructure must be three-dimensional.")
 
-    # Map [0, L] -> [0, N-1], then clamp
-    idx = np.floor(point / dimensions * (shape - 1) + 0.5).astype(np.int64)
-    idx = np.clip(idx, 0, shape - 1)
-    return idx
-
-
-def _inside_cell(P, L, eps=1e-12):
-    P = np.asarray(P, float)
-    L = np.asarray(L, float)
-    return np.all(P >= -eps) and np.all(P < L + eps)
-
-
-def draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L):
     start = np.asarray(start, np.float64)
     end = np.asarray(end, np.float64)
+    voxel_sizes = np.asarray(voxel_sizes, np.float64)
     L = np.asarray(L, np.float64)
+    shape = np.asarray(microstructure.shape)
+    if start.shape != (3,) or end.shape != (3,):
+        raise ValueError("start and end must contain three coordinates.")
+    if voxel_sizes.shape != (3,) or L.shape != (3,):
+        raise ValueError("voxel_sizes and L must contain three values.")
+    if not np.all(np.isfinite((*start, *end, *voxel_sizes, *L, radius))):
+        raise ValueError("Strut geometry must contain only finite values.")
+    if radius <= 0 or np.any(voxel_sizes <= 0) or np.any(L <= 0):
+        raise ValueError("radius, voxel_sizes, and L must be positive.")
+    if not np.allclose(voxel_sizes * shape, L):
+        raise ValueError("voxel_sizes must equal L divided by the image shape.")
 
-    direction = end - start
-    length = np.linalg.norm(direction)
-    if length == 0:
+    segment = end - start
+    length_squared = segment @ segment
+    if length_squared == 0:
         return
-    direction /= length
 
-    step = np.linalg.norm(voxel_sizes)  # ~ one voxel diagonal
-    num_points = max(1, int(np.ceil(length / step)))
-    ts = np.linspace(0.0, length, num_points, dtype=np.float64)
+    eps = 10 * np.finfo(np.float64).eps
+    shifts = ((0, 0, 0),)
+    if periodic:
+        center_min = 0.5 * voxel_sizes
+        center_max = L - center_min
+        segment_min = np.minimum(start, end)
+        segment_max = np.maximum(start, end)
+        first_shift = np.ceil((center_min - segment_max - radius) / L - eps).astype(int)
+        last_shift = np.floor((center_max - segment_min + radius) / L + eps).astype(int)
+        shifts = product(
+            *(
+                range(first, last + 1)
+                for first, last in zip(first_shift, last_shift, strict=True)
+            )
+        )
 
-    voxel_radius = np.array([radius / voxel_sizes[i] for i in range(3)], np.float64)
-
-    for t in ts:
-        p = start + t * direction
-        if not _inside_cell(p, L):
+    radius_squared = radius * radius
+    for shift in shifts:
+        shifted_start = start + np.asarray(shift) * L
+        shifted_end = shifted_start + segment
+        lower = np.minimum(shifted_start, shifted_end) - radius
+        upper = np.maximum(shifted_start, shifted_end) + radius
+        first = np.maximum(0, np.ceil(lower / voxel_sizes - 0.5 - eps).astype(int))
+        last = np.minimum(
+            shape, np.floor(upper / voxel_sizes - 0.5 + eps).astype(int) + 1
+        )
+        if np.any(first >= last):
             continue
 
-        x, y, z = physical_to_voxel(p, L, microstructure.shape)
+        y = ((np.arange(first[1], last[1]) + 0.5) * voxel_sizes[1])[None, :, None]
+        z = ((np.arange(first[2], last[2]) + 0.5) * voxel_sizes[2])[None, None, :]
+        plane_size = (last[1] - first[1]) * (last[2] - first[2])
+        chunk_size = max(1, 1_000_000 // plane_size)
 
-        x_min = max(0, int(np.floor(x - voxel_radius[0])))
-        x_max = min(microstructure.shape[0], int(np.ceil(x + voxel_radius[0] + 1)))
-        y_min = max(0, int(np.floor(y - voxel_radius[1])))
-        y_max = min(microstructure.shape[1], int(np.ceil(y + voxel_radius[1] + 1)))
-        z_min = max(0, int(np.floor(z - voxel_radius[2])))
-        z_max = min(microstructure.shape[2], int(np.ceil(z + voxel_radius[2] + 1)))
+        for x_start in range(first[0], last[0], chunk_size):
+            x_stop = min(x_start + chunk_size, last[0])
+            x = ((np.arange(x_start, x_stop) + 0.5) * voxel_sizes[0])[:, None, None]
+            projection = (
+                (x - shifted_start[0]) * segment[0]
+                + (y - shifted_start[1]) * segment[1]
+                + (z - shifted_start[2]) * segment[2]
+            ) / length_squared
+            np.clip(projection, 0.0, 1.0, out=projection)
+            distance_squared = (
+                (x - shifted_start[0] - projection * segment[0]) ** 2
+                + (y - shifted_start[1] - projection * segment[1]) ** 2
+                + (z - shifted_start[2] - projection * segment[2]) ** 2
+            )
+            block = microstructure[
+                x_start:x_stop,
+                first[1] : last[1],
+                first[2] : last[2],
+            ]
+            block[distance_squared <= radius_squared] = 1
 
-        if strut_type == "circle":
-            xx, yy, zz = np.ogrid[x_min:x_max, y_min:y_max, z_min:z_max]
-            dx = (xx - x) * voxel_sizes[0]
-            dy = (yy - y) * voxel_sizes[1]
-            dz = (zz - z) * voxel_sizes[2]
-            mask = (dx * dx + dy * dy + dz * dz) <= (radius * radius)
-            microstructure[x_min:x_max, y_min:y_max, z_min:z_max][mask] = 1
-        else:
-            raise ValueError("Only 'circle' implemented.")
 
-
-def create_lattice_image(
-    Nx, Ny, Nz, unit_cell_func, L=None, radius=0.05, strut_type="circle"
-):
+def create_lattice_image(Nx, Ny, Nz, unit_cell_func, L=None, radius=0.05):
     """
     Create a lattice microstructure image.
 
@@ -88,38 +116,72 @@ def create_lattice_image(
     - unit_cell_func: function - The function that returns the vertices and edges of the unit cell.
     - L: list - The length of the microstructure in each dimension. Default is [1, 1, 1].
     - radius: float - The radius of the struts. Default is 0.05.
-    - strut_type: str - The type of the struts. Default is 'circle'.
 
     Returns:
     - microstructure: ndarray - The generated microstructure image.
     """
-    if L is None:
-        L = [1.0, 1.0, 1.0]
-    L = np.asarray(L, dtype=np.float64)
-
+    resolution = np.asarray((Nx, Ny, Nz), dtype=np.float64)
+    if not np.all(np.isfinite(resolution)) or not np.all(
+        resolution == np.floor(resolution)
+    ):
+        raise ValueError("Resolution values must be integers.")
+    Nvec = resolution.astype(np.int64)
+    L = np.ones(3) if L is None else np.asarray(L, dtype=np.float64)
+    if L.shape != (3,):
+        raise ValueError("L must contain three values.")
+    if np.any(Nvec <= 0) or np.any(~np.isfinite(L)) or np.any(L <= 0):
+        raise ValueError("Resolution and physical lengths must be positive.")
+    if not np.isfinite(radius) or radius <= 0:
+        raise ValueError("radius must be positive.")
     vertices, edges = unit_cell_func()
+    vertices = np.asarray(vertices, dtype=np.float64)
+    if vertices.ndim != 2 or vertices.shape[1] != 3:
+        raise ValueError("Unit-cell vertices must have shape (n, 3).")
+    if np.any(~np.isfinite(vertices)):
+        raise ValueError("Unit-cell vertices must be finite.")
+    edge_values = np.asarray(edges, dtype=np.float64)
+    if edge_values.size == 0:
+        edges = np.empty((0, 2), dtype=np.int64)
+    else:
+        if (
+            edge_values.ndim != 2
+            or edge_values.shape[1] != 2
+            or np.any(~np.isfinite(edge_values))
+            or np.any(edge_values != np.floor(edge_values))
+        ):
+            raise ValueError("Unit-cell edges must contain pairs of vertex indices.")
+        edges = edge_values.astype(np.int64)
+        if np.any(edges < 0) or np.any(edges >= len(vertices)):
+            raise ValueError("Unit-cell edge index is out of bounds.")
+        if np.any(np.all(vertices[edges[:, 0]] == vertices[edges[:, 1]], axis=1)):
+            raise ValueError("Unit-cell edges must have nonzero length.")
 
-    # CONSISTENT voxel spacing with 0..N-1 indexing
-    Nvec = np.array([Nx, Ny, Nz], dtype=np.int64)
-    voxel_sizes = L / (Nvec - 1).astype(np.float64)
+    voxel_sizes = L / Nvec
 
-    microstructure = np.zeros((Nx, Ny, Nz), dtype=np.int8)
+    microstructure = np.zeros(tuple(Nvec), dtype=np.int8)
 
     # scale vertices into physical domain [0, L]
     phys_vertices = vertices * L
 
     for a, b in edges:
         start, end = phys_vertices[a], phys_vertices[b]
-        draw_strut(microstructure, start, end, radius, voxel_sizes, strut_type, L)
+        draw_strut(
+            microstructure,
+            start,
+            end,
+            radius,
+            voxel_sizes,
+            L,
+            periodic=True,
+        )
 
     return microstructure
 
 
 if __name__ == "__main__":
-    Nx, Ny, Nz = 256, 256, 256  # microstructure resolution
+    Nx, Ny, Nz = 200, 300, 400  # microstructure resolution
     L = [1.0, 1.0, 1.0]  # microstructure length
     radius = 0.05  # radius of the struts
-    strut_type = "circle"
 
     unit_cell_types = {
         "BCC": BCC_lattice,
@@ -137,12 +199,11 @@ if __name__ == "__main__":
         "resolution [Nx, Ny, Nz]": [Nx, Ny, Nz],
         "length [Lx, Ly, Lz]": L,
         "strut radius": radius,
-        "strut type": strut_type,
     }
 
     microstructures = {}
     for name, unit_cell_func in unit_cell_types.items():
-        image = create_lattice_image(Nx, Ny, Nz, unit_cell_func, L, radius, strut_type)
+        image = create_lattice_image(Nx, Ny, Nz, unit_cell_func, L, radius)
 
         tmp_metadata = metadata.copy()
         tmp_metadata["lattice type"] = name
@@ -158,7 +219,3 @@ if __name__ == "__main__":
         time_series=False,
         verbose=True,
     )
-
-    # vertices, edges = auxetic_lattice()
-    # plot_lattice(vertices, edges)
-    # print(check_rigidity(vertices, edges))

@@ -33,16 +33,10 @@ pixi shell
 
 These modules produce periodic voxelized microstructures (numpy arrays / HDF5 datasets) of heterogeneous materials which can be readily used in FFT-based solvers such as [FANS](https://github.com/DataAnalyticsEngineering/FANS).
 
-- Voronoi based microstructures: ([MSUtils/voronoi/](MSUtils/voronoi/))
-  - [VoronoiSeeds.py](MSUtils/voronoi/VoronoiSeeds.py): Sampling strategies for Voronoi seed placement (sobol, halton, lhs-lloyd, lattice/honeycomb) and lattice vectors.
-  - [VoronoiTessellation.py](MSUtils/voronoi/VoronoiTessellation.py): Build periodic Voronoi tessellations, compute analytical crystal volumes, interface areas, structure tensors and export to VTU.
-  - [voronoi_foam.py](MSUtils/voronoi/voronoi_foam.py): Rasterize Voronoi edges into strut-based foam microstructures.
-  - [VoronoiImage.py](MSUtils/voronoi/VoronoiImage.py): Rasterize seeds into a labelled voxel image using a periodic KDTree (nearest-seed labelling).
-  - [VoronoiGBErosion.py](MSUtils/voronoi/VoronoiGBErosion.py): Erode Voronoi images to identify grain-boundary voxels, tag grain-boundary IDs and save grain-boundary metadata.
-
-- Neper based microstructures: ([MSUtils/neper/](MSUtils/neper/))
+- [Neper](https://github.com/neperfepx/neper)-based microstructures: ([MSUtils/neper/](MSUtils/neper/))
   - [NeperMicrostructure.py](MSUtils/neper/NeperMicrostructure.py): Generate Neper raster tessellations and export labelled voxel images and per-grain rotation matrices.
   - [NeperGBErosion.py](MSUtils/neper/NeperGBErosion.py): Rasterize finite-thickness grain boundaries from Neper face geometry and export the eroded image with its per-grain rotation matrices.
+  - [NeperFoam.py](MSUtils/neper/NeperFoam.py): Rasterize the edges of periodic Neper tessellations as strut-based foam microstructures.
   - Rotation matrices map crystal-frame column vectors into the sample frame: `v_sample = Q @ v_crystal`. Their columns are therefore the crystal x, y and z axes expressed in sample coordinates.
 
 - Triply periodic minimal surface (TPMS) based microstructures: ([MSUtils/TPMS/](MSUtils/TPMS/))
