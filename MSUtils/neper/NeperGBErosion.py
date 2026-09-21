@@ -170,6 +170,7 @@ class NeperGBErosion:
             for name in (
                 "eroded_image",
                 "eroded_image_normals",
+                "normals",
                 "rotation_matrices",
                 *orientation_names,
             ):
@@ -187,13 +188,14 @@ class NeperGBErosion:
                 {
                     **grid_attributes,
                     "interface_thickness": self.interface_thickness,
-                    "GBVoxelInfo": json.dumps(
+                    "GBNeighbors": json.dumps(
                         {
                             str(tag): {
                                 "GB_tag": int(tag),
-                                "GB_normal": normal.tolist(),
+                                "grain_tag_1": grain_tag_1,
+                                "grain_tag_2": grain_tag_2
                             }
-                            for tag, (normal, _, _) in sorted(
+                            for tag, (_, grain_tag_1, grain_tag_2) in sorted(
                                 self.ridge_metadata.items()
                             )
                         }
@@ -202,7 +204,21 @@ class NeperGBErosion:
                     "num_GB": len(self.ridge_metadata),
                 }
             )
+            group.create_dataset("normals", data=np.array([self.ridge_metadata[tag][0] for tag in sorted(self.ridge_metadata)]))
             group.create_dataset("rotation_matrices", data=self.rotation_matrices)
+            if save_normals:
+                normals = np.zeros(self.eroded_image.shape + (3,), dtype=np.float64)
+                for tag, (normal, _, _) in self.ridge_metadata.items():
+                    normals[self.eroded_image == tag] = normal
+                if order == "zyx":
+                    normals = normals.transpose(2, 1, 0, 3)
+                dataset = group.create_dataset(
+                    "eroded_image_normals",
+                    data=normals,
+                    compression="gzip",
+                    compression_opts=6,
+                )
+                dataset.attrs.update(grid_attributes)
             if save_orientations:
                 grain_voxels = self.eroded_image < self.num_crystals
                 for axis, name in enumerate(orientation_names):
@@ -219,16 +235,3 @@ class NeperGBErosion:
                         compression_opts=6,
                     )
                     dataset.attrs.update(grid_attributes)
-            if save_normals:
-                normals = np.zeros(self.eroded_image.shape + (3,), dtype=np.float64)
-                for tag, (normal, _, _) in self.ridge_metadata.items():
-                    normals[self.eroded_image == tag] = normal
-                if order == "zyx":
-                    normals = normals.transpose(2, 1, 0, 3)
-                dataset = group.create_dataset(
-                    "eroded_image_normals",
-                    data=normals,
-                    compression="gzip",
-                    compression_opts=6,
-                )
-                dataset.attrs.update(grid_attributes)
