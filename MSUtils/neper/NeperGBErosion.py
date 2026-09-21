@@ -170,6 +170,7 @@ class NeperGBErosion:
             for name in (
                 "eroded_image",
                 "eroded_image_normals",
+                "GB_normals",
                 "rotation_matrices",
                 *orientation_names,
             ):
@@ -187,13 +188,14 @@ class NeperGBErosion:
                 {
                     **grid_attributes,
                     "interface_thickness": self.interface_thickness,
-                    "GBVoxelInfo": json.dumps(
+                    "GBNeighbors": json.dumps(
                         {
                             str(tag): {
                                 "GB_tag": int(tag),
-                                "GB_normal": normal.tolist(),
+                                "grain_tag_1": grain_tag_1,
+                                "grain_tag_2": grain_tag_2,
                             }
-                            for tag, (normal, _, _) in sorted(
+                            for tag, (_, grain_tag_1, grain_tag_2) in sorted(
                                 self.ridge_metadata.items()
                             )
                         }
@@ -202,6 +204,10 @@ class NeperGBErosion:
                     "num_GB": len(self.ridge_metadata),
                 }
             )
+            gb_normals = np.zeros((self.num_crystals + len(self.ridge_metadata), 3))
+            for tag, (normal, _, _) in self.ridge_metadata.items():
+                gb_normals[tag] = normal
+            group.create_dataset("GB_normals", data=gb_normals)
             group.create_dataset("rotation_matrices", data=self.rotation_matrices)
             if save_orientations:
                 grain_voxels = self.eroded_image < self.num_crystals
