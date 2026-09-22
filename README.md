@@ -48,7 +48,7 @@ These modules produce periodic voxelized microstructures (numpy arrays / HDF5 da
 
 - Lattice based microstructures: ([MSUtils/lattices/](MSUtils/lattices/))
   - [lattice_definitions.py](MSUtils/lattices/lattice_definitions.py): Unit-cell vertex + edge definitions for many lattices (BCC, FCC, octet, auxetic, etc.).
-  - [lattice_image.py](MSUtils/lattices/lattice_image.py): Draw struts for lattice unit-cells onto a voxel grid.
+  - [LatticeMicrostructure.py](MSUtils/lattices/LatticeMicrostructure.py): Draw struts for lattice unit-cells onto a voxel grid.
 
 ## Microstructure utilities
 

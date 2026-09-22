@@ -2,8 +2,8 @@ from pathlib import Path
 
 import numpy as np
 
+from MSUtils.general.draw_strut import draw_strut
 from MSUtils.general.MicrostructureImage import MicrostructureImage
-from MSUtils.lattices.lattice_image import draw_strut
 from MSUtils.neper.NeperMicrostructure import NeperMicrostructure
 
 
@@ -32,8 +32,7 @@ class NeperFoam(MicrostructureImage):
                 vertices[start],
                 vertices[end],
                 strut_radius,
-                microstructure.voxel_size,
-                microstructure.L,
+                microstructure.grid,
                 periodic=True,
             )
 
