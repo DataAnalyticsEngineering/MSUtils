@@ -1,10 +1,12 @@
 from time import time
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
-from typing import Tuple, List, Union, Optional
-from scipy.fft import fftn, ifftn, fftfreq
+from scipy.fft import fftfreq, fftn, ifftn
 from scipy.spatial.transform import Rotation
-from MSUtils.general.MicrostructureImage import MicrostructureImage
+
 from MSUtils.general.h52xdmf import write_xdmf
+from MSUtils.general.MicrostructureImage import MicrostructureImage
 
 
 def generate_spinodal_microstructure(
@@ -95,7 +97,6 @@ def generate_spinodal_microstructure(
 
 
 if __name__ == "__main__":
-
     N = [256, 256, 256]
     L = [1.0, 1.0, 1.0]
     wavenumber = [20.0, 20.0, 20.0]

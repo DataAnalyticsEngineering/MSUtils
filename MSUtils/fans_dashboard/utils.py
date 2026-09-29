@@ -1,6 +1,8 @@
+from collections import defaultdict
+
 import h5py
 import numpy as np
-from collections import defaultdict
+
 from MSUtils.fans_dashboard.postprocessing import compute_rank2tensor_measures
 
 

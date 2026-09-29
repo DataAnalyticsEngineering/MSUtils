@@ -33,12 +33,11 @@ pixi shell
 
 These modules produce periodic voxelized microstructures (numpy arrays / HDF5 datasets) of heterogeneous materials which can be readily used in FFT-based solvers such as [FANS](https://github.com/DataAnalyticsEngineering/FANS).
 
-- Voronoi based microstructures: ([MSUtils/voronoi/](MSUtils/voronoi/))
-  - [VoronoiSeeds.py](MSUtils/voronoi/VoronoiSeeds.py): Sampling strategies for Voronoi seed placement (sobol, halton, lhs-lloyd, lattice/honeycomb) and lattice vectors.
-  - [VoronoiTessellation.py](MSUtils/voronoi/VoronoiTessellation.py): Build periodic Voronoi tessellations, compute analytical crystal volumes, interface areas, structure tensors and export to VTU.
-  - [voronoi_foam.py](MSUtils/voronoi/voronoi_foam.py): Rasterize Voronoi edges into strut-based foam microstructures.
-  - [VoronoiImage.py](MSUtils/voronoi/VoronoiImage.py): Rasterize seeds into a labelled voxel image using a periodic KDTree (nearest-seed labelling).
-  - [VoronoiGBErosion.py](MSUtils/voronoi/VoronoiGBErosion.py): Erode Voronoi images to identify grain-boundary voxels, tag grain-boundary IDs and save grain-boundary metadata.
+- [Neper](https://github.com/neperfepx/neper)-based microstructures: ([MSUtils/neper/](MSUtils/neper/))
+  - [NeperMicrostructure.py](MSUtils/neper/NeperMicrostructure.py): Generate Neper raster tessellations and export labelled voxel images and per-grain rotation matrices.
+  - [NeperGBErosion.py](MSUtils/neper/NeperGBErosion.py): Rasterize finite-thickness grain boundaries from Neper face geometry and export the eroded image with its per-grain rotation matrices.
+  - [NeperFoam.py](MSUtils/neper/NeperFoam.py): Rasterize the edges of periodic Neper tessellations as strut-based foam microstructures.
+  - Rotation matrices map crystal-frame column vectors into the sample frame: `v_sample = Q @ v_crystal`. Their columns are therefore the crystal x, y and z axes expressed in sample coordinates.
 
 - Triply periodic minimal surface (TPMS) based microstructures: ([MSUtils/TPMS/](MSUtils/TPMS/))
   - [tpms.py](MSUtils/TPMS/tpms.py): Generate TPMS (Gyroid, Schwarz P, Diamond, Neovius, IWP, Lidinoid, etc.) based microstructures. Supports binarization modes (`solid`/`shell`) and threshold-finding for target volume fractions.
@@ -49,7 +48,7 @@ These modules produce periodic voxelized microstructures (numpy arrays / HDF5 da
 
 - Lattice based microstructures: ([MSUtils/lattices/](MSUtils/lattices/))
   - [lattice_definitions.py](MSUtils/lattices/lattice_definitions.py): Unit-cell vertex + edge definitions for many lattices (BCC, FCC, octet, auxetic, etc.).
-  - [lattice_image.py](MSUtils/lattices/lattice_image.py): Draw struts for lattice unit-cells onto a voxel grid.
+  - [LatticeMicrostructure.py](MSUtils/lattices/LatticeMicrostructure.py): Draw struts for lattice unit-cells onto a voxel grid.
 
 ## Microstructure utilities
 
@@ -57,11 +56,12 @@ Utilities for file I/O, conversions, and practical helpers.
 
 - [MSUtils/general/](MSUtils/general/)
   - [MicrostructureImage.py](MSUtils/general/MicrostructureImage.py) - Core class for microstructure data: read/write HDF5 datasets with permute-order handling, metadata, and volume fraction calculation.
-  - [ComBoMicrostructureImage.py](MSUtils/general/ComBoMicrostructureImage.py) - Morphologically sound coarse-graining via composite boxels (ComBo) as described in our [paper](https://doi.org/10.1007/s00466-022-02232-4).
   - [resize_image.py](MSUtils/general/resize_image.py) - Resize and smooth 3D labelled voxelized microstructure images to any target image resolution.
-  - [vtk2h5.py](MSUtils/general/vtk2h5.py) - Convert VTI/VTU cell-centered meshes into HDF5 datasets inferred on a regular cell-center grid.
   - [h52xdmf.py](MSUtils/general/h52xdmf.py) - Convert HDF5 datasets into XDMF XML for ParaView. Supports scalar/vector/tensor attributes and time-series handling.
   - [merge_h5_files.py](MSUtils/general/merge_h5_files.py) - Merge multiple HDF5 files into one by recursively copying groups/datasets.
+
+- [MSUtils/ComBo/](MSUtils/ComBo/)
+  - [ComBoMicrostructureImage.py](MSUtils/ComBo/ComBoMicrostructureImage.py) - Morphologically sound coarse-graining via composite boxels (ComBo) as described in our [paper](https://doi.org/10.1007/s00466-022-02232-4).
 
 - [MSUtils/sampling/](MSUtils/sampling/)
   - [generate_loadpaths.py](MSUtils/sampling/generate_loadpaths.py) - Samples quasi-uniform equal-area directions on the unit hypersphere using the [`LeopardiSampler`](https://github.com/FlorianPfaff/pyRecEst/blob/main/pyrecest/sampling/leopardi_sampler.py) (See [paper](https://ftp.gwdg.de/pub/EMIS/journals/ETNA/vol.25.2006/pp309-327.dir/pp309-327.pdf) for further details). Using the sampled directions, produce linear strain ramps to user limits on deviatoric and volumetric strain magnitude and exporting the load paths to JSON that can be used in the input file for [FANS](https://github.com/DataAnalyticsEngineering/FANS).

@@ -410,15 +410,3 @@ def plot_lattice(vertices, edges):
     # Set axis labels
     fig.update_layout(scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"))
     fig.show()
-
-
-def check_rigidity(vertices, edges):
-    n = len(vertices)  # number of nodes
-    m = len(edges)  # number of struts
-    result = m - 3 * n + 6
-    if result == 0:
-        return "Lattice is statically determinate and rigid"
-    elif result > 0:
-        return "Lattice is statically indeterminate"
-    else:
-        return "Lattice is flexible and unstable"

@@ -1,4 +1,5 @@
 import numpy as np
+
 import MSUtils.sampling.generate_loadpaths as generate_loadpaths
 
 
@@ -52,7 +53,6 @@ def UniaxialStressStrainSampling(
 
 
 if __name__ == "__main__":
-
     num_load_paths = 128  # number of load paths to generate
     num_time_steps = 10  # number of time steps per load path
     dim = 6

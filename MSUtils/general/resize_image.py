@@ -1,84 +1,77 @@
 import numpy as np
-import scipy.ndimage
-import skimage.morphology
-import skimage.transform
+from scipy.fft import irfftn, rfftn
+from scipy.ndimage import median_filter as scipy_median_filter
+from skimage.transform import resize
 
 
-def resize_image(
-    data_array: np.ndarray, scale: list = None, target_resolution: list = None
-) -> np.ndarray:
-    """
-    Resizes and smoothens a 3D microstructure image by a given scale factor or to a target resolution.
+def _median_filter(image, footprint, workers):
+    """Select the fastest periodic median filter for the image labels."""
+    labels = np.unique(image)
+    if labels.size == 1:
+        return image
+    if labels.size > 2:
+        return scipy_median_filter(image, footprint=footprint, mode="wrap")
 
-    Args:
-        data_array (np.ndarray): The input 3D data array to be resized.
-        scale (list, optional): The scale factor to be applied along each dimension. If provided, 'target_resolution' is ignored.
-        target_resolution (list, optional): The target resolution of the resized array. Used only if 'scale' is not provided.
-
-    Returns:
-        np.ndarray: The resized and smoothed 3D microstructure image.
-
-    Raises:
-        ValueError: If both 'scale' and 'target_resolution' are None.
-
-    Notes:
-        - If both 'scale' and 'target_resolution' are None, a default scale of [2, 2, 2] is used.
-        - If the scale factors are greater than 1, a median filter is applied to smooth the resized image.
-        - The median filter uses an octahedron footprint if the scale factors are equal; otherwise, it uses a kernel size twice the scale factor.
-    """
-    if scale is not None:
-        new_shape = np.multiply(data_array.shape, scale)
-    elif target_resolution is not None:
-        scale = np.ceil(
-            np.array(target_resolution) / np.array(data_array.shape)
-        ).astype(int)
-        new_shape = target_resolution
-    else:
-        scale = [2, 2, 2]
-        new_shape = np.multiply(data_array.shape, scale)
-
-    resized_image = skimage.transform.resize(
-        data_array, new_shape, preserve_range=True, anti_aliasing=False, order=0
+    kernel = np.zeros(image.shape, dtype=np.float32)
+    positions = np.nonzero(footprint)
+    radii = np.asarray(footprint.shape) // 2
+    wrapped = tuple(
+        (position - radius) % size
+        for position, radius, size in zip(positions, radii, image.shape, strict=True)
     )
+    np.add.at(kernel, wrapped, 1)
 
-    if np.all(scale > [1, 1, 1]):
-        if np.all(scale[0] == scale[1] == scale[2]):
-            radius = int(scale[0] * 2)  # Adjust the radius as needed
-            footprint = skimage.morphology.octahedron(radius)
-            resized_image = scipy.ndimage.median_filter(
-                resized_image, footprint=footprint, mode="wrap"
-            )
-        else:
-            kernel_size = [
-                2 * s for s in scale
-            ]  # Default kernel size is twice the scale factor
-            resized_image = scipy.ndimage.median_filter(
-                resized_image, size=kernel_size, mode="wrap"
-            )
-
-    return resized_image
+    kernel_spectrum = rfftn(kernel, workers=workers, overwrite_x=True)
+    del kernel
+    phase = (image == labels[1]).astype(np.float32)
+    phase_spectrum = rfftn(phase, workers=workers, overwrite_x=True)
+    del phase
+    kernel_spectrum *= phase_spectrum
+    del phase_spectrum
+    counts = irfftn(kernel_spectrum, s=image.shape, workers=workers, overwrite_x=True)
+    np.rint(counts, out=counts)
+    return np.where(
+        counts > np.count_nonzero(footprint) // 2, labels[1], labels[0]
+    ).astype(image.dtype, copy=False)
 
 
-def main():
-    from MSUtils.general.MicrostructureImage import MicrostructureImage
+def resize_image(data_array, target_resolution, workers=None):
+    """Resize and periodically smooth a two- or three-dimensional label image."""
+    image = np.asarray(data_array)
+    if image.ndim not in (2, 3):
+        raise ValueError("data_array must be two- or three-dimensional.")
 
-    ms = MicrostructureImage(
-        h5_filename="data/sphere.h5", dset_name="/sphere03628/240x240x240/ms"
-    )
-    ms_resized = MicrostructureImage(
-        image=resize_image(ms.image, target_resolution=[256, 256, 256])
-    )
-    ms_resized.write(h5_filename="data/test_resize_image.h5", dset_name="ms")
+    target = np.asarray(target_resolution, dtype=float)
+    if (
+        target.shape != (image.ndim,)
+        or not np.all(np.isfinite(target))
+        or not np.all(target == np.floor(target))
+    ):
+        raise ValueError("target_resolution must contain one integer per image axis.")
+    target = target.astype(int)
+    if np.any(target <= 0):
+        raise ValueError("target_resolution values must be positive.")
+    if np.array_equal(target, image.shape):
+        return image.copy()
 
-    error = {}
-    for key in ms.volume_fractions.keys():
-        error[key] = (
-            (ms.volume_fractions[key] - ms_resized.volume_fractions[key])
-            * 100
-            / ms.volume_fractions[key]
+    lifted = resize(
+        image,
+        tuple(target),
+        order=0,
+        preserve_range=True,
+        anti_aliasing=False,
+    ).astype(image.dtype, copy=False)
+    if np.all(target <= image.shape):
+        return lifted
+
+    scale = np.ceil(target / np.asarray(image.shape)).astype(int)
+    radii = 2 * scale
+    coordinates = np.ogrid[tuple(slice(-radius, radius + 1) for radius in radii)]
+    footprint = (
+        sum(
+            np.abs(coordinate) / radius
+            for coordinate, radius in zip(coordinates, radii, strict=True)
         )
-        print(f"Resizing volume fraction error for phase {key}: {error[key]:.6f}%")
-
-
-if __name__ == "__main__":
-    main()
+        <= 1
+    )
+    return _median_filter(lifted, footprint, workers)
